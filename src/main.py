@@ -2,7 +2,13 @@ from fastapi import FastAPI
 from fastapi.openapi.docs import get_swagger_ui_html
 import uvicorn
 
-from hotels import router_hotels
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent))
+
+from src.hotels.api.hotels import router_hotels
+from src.database import *
 
 app = FastAPI(docs_url=None)
 app.include_router(router_hotels)
