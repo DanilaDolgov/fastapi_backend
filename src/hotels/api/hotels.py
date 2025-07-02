@@ -24,9 +24,9 @@ async def get_hotels(
     async with async_session_maker() as session:
         query = select(HotelsOrm)
         if location:
-            query = query.filter_by(id=id)
+            query = query.filter(HotelsOrm.location.like(f'%{location}%'))
         if title:
-            query = query.filter_by(title=title)
+            query = query.filter(HotelsOrm.title.like(f"%{title}%"))
         query = (
             query
             .limit(per_page)
