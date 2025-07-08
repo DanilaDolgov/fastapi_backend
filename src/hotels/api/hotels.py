@@ -5,6 +5,7 @@ from src.database import async_session_maker
 from src.hotels.api.dependencies import PaginationHotels
 from src.hotels.models.hotels import HotelsOrm
 from src.hotels.schemas.hotels import Hotel, HotelPATCH
+from src.repositories.hotels import HotelsRepository
 
 router_hotels = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -20,22 +21,13 @@ async def get_hotels(
 ):
     per_page = pagination.per_page or 5
     async with async_session_maker() as session:
-        query = select(HotelsOrm)
-        if location:
-            query = query.filter(func.lower(HotelsOrm.location).like(f'%{location.strip().lower()}%'))
-        if title:
-            query = query.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
-        query = (
-            query
-            .limit(per_page)
-            .offset(per_page * (pagination.page - 1))
-        )
-        result = await session.execute(query)
+       return await HotelsRepository(session=session).get_all(
+            location=location,
+            title=title,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1))
 
-        hotels = result.scalars().all()
-        print(hotels)
-        # print(type(hotels), hotels)
-        return hotels
+    #     return hotels
     # if pagination.page is None and pagination.pre_page is None:
     #     return hotels[0:3]
     # else:
@@ -60,12 +52,11 @@ async def create_hotels(data_hotel: Hotel = Body(openapi_examples={
             }
     }
 })):
+
     async with async_session_maker() as session:
-        added_hotels_stm = insert(HotelsOrm).values(**data_hotel.model_dump())
-        print(added_hotels_stm.compile(compile_kwargs={"literal_binds": True}))
-        await session.execute(added_hotels_stm)
+        hotel = await HotelsRepository(session).add(data_hotel)
         await session.commit()
-    return {'Status': 'Ok'}
+    return {'Status': 'Ok', 'data': hotel}
 
 
 @router_hotels.put("/{hotel_id}")
