@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update, delete
 from sqlalchemy.orm import sessionmaker
 
 
@@ -24,3 +24,11 @@ class BaseRepository:
         print(added_stm.compile(compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(added_stm)
         return result.scalars().one()
+
+    async def update(self, data: BaseModel, **filter_by) -> None :
+        update_stm = update(self.model).filter_by(**filter_by).values(**data.model_dump())
+        await self.session.execute(update_stm)
+
+    async def delete(self, **filter_by) -> None:
+        delete_stm =delete(self.model).filter_by(**filter_by)
+        await self.session.execute(delete_stm)
