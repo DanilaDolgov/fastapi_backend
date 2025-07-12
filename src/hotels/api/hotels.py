@@ -1,9 +1,6 @@
 from fastapi import Query, APIRouter, Body
-from sqlalchemy import insert, select, func
-
 from src.database import async_session_maker
 from src.hotels.api.dependencies import PaginationHotels
-from src.hotels.models.hotels import HotelsOrm
 from src.hotels.schemas.hotels import Hotel, HotelPATCH
 from src.repositories.hotels import HotelsRepository
 
@@ -27,12 +24,6 @@ async def get_hotels(
             limit=per_page,
             offset=per_page * (pagination.page - 1))
 
-    #     return hotels
-    # if pagination.page is None and pagination.pre_page is None:
-    #     return hotels[0:3]
-    # else:
-    #     return hotels[pagination.pre_page * (pagination.page - 1):][:pagination.pre_page]
-
 
 @router_hotels.delete("/{hotel_id}")
 async def delete_hotels(hotel_id: int):
@@ -41,6 +32,14 @@ async def delete_hotels(hotel_id: int):
         await session.commit()
 
     return {'Status': 'Ok'}
+
+@router_hotels.get("/{hotel_id}")
+async def get_hotel_one(hotel_id: int):
+    async with async_session_maker() as session:
+        hotel = await HotelsRepository(session).get_one(id=hotel_id)
+        await session.commit()
+    return {'Hotel': hotel}
+
 
 
 @router_hotels.post("")
@@ -71,16 +70,10 @@ async def update_hotel(hotel_id: int, data_hotel: Hotel):
 
 
 @router_hotels.patch("/{hotel_id}")
-def update_patch_hotel(hotel_id: int, data_hotel: HotelPATCH):
-    global hotels
-    hotels = [
-        {
-            **hotel,
-            "title": data_hotel.title if data_hotel.title is not None else hotel["title"],
-            "name": data_hotel.name if data_hotel.name is not None else hotel["name"],
-            "address": data_hotel.address if data_hotel.address is not None else hotel["address"],
-            "phone": data_hotel.phone if data_hotel.phone is not None else hotel["phone"]
-        } if hotel["id"] == hotel_id else hotel
-        for hotel in hotels
-    ]
+async def update_patch_hotel(hotel_id: int, data_hotel: HotelPATCH):
+
+    async with async_session_maker() as session:
+        await HotelsRepository(session).update(data_hotel, exclude_unset=True, id=hotel_id)
+        await session.commit()
+
     return {"Status": "Ok"}
