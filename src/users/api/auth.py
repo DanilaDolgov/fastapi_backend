@@ -8,6 +8,7 @@ import jwt
 
 
 from src.database import async_session_maker
+from src.hotels.api.dependencies import UserIdDep
 from src.repositories.users import UsersRepository
 from src.services.auth import AuthService
 from src.users.schemas.users import UserRequestAdd, UserAdd
@@ -49,12 +50,16 @@ async def register_user(
     return {'Status': 'Ok'}
 
 
-@router.get("/only_auth")
-async def only_auth(
-request: Request,
-) :
-    access_token = request.cookies
-    if access_token.get("access_token", None):
-        return {'Token': f'{access_token["access_token"]}'}
-    else:
-        return 'Token is none.'
+@router.get("/me")
+async def get_me(
+user_id: UserIdDep
+):
+    async with async_session_maker() as session:
+        user = await UsersRepository(session).get_one_or_none(id=user_id)
+        return user
+
+
+@router.patch("/logout")
+async def logout_user(response: Response):
+    response.delete_cookie("access_token")
+    return {'Status': 'Ok'}

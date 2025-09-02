@@ -9,7 +9,7 @@ class UserAdd(BaseModel):
     email: EmailStr
     hash_password: str
 
-class User(UserAdd):
+class User(BaseModel):
     id: int
     email: EmailStr
 
