@@ -59,7 +59,7 @@ user_id: UserIdDep
         return user
 
 
-@router.patch("/logout")
+@router.post("/logout")
 async def logout_user(response: Response):
     response.delete_cookie("access_token")
     return {'Status': 'Ok'}
