@@ -28,3 +28,5 @@ def get_current_user_id(token: str = Depends(get_token)):
 
 
 UserIdDep = Annotated[int, Depends(get_current_user_id)]
+
+PaginationRooms = Annotated[PaginationParams, Depends()]

@@ -34,6 +34,13 @@ class BaseRepository:
             return self.schema.model_validate(model, from_attributes=True)
         return None
 
+    async def get_in_params(self, **filter_by):
+        query = select(self.model).filter_by(**filter_by)
+        result = await self.session.execute(query)
+        if result:
+            return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()]
+        return None
+
     async def add(self, data: BaseModel):
         added_stm = insert(self.model).values(**data.model_dump()).returning(self.model)
         print(added_stm.compile(compile_kwargs={"literal_binds": True}))

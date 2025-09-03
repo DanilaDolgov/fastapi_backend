@@ -3,10 +3,16 @@ from src.database import async_session_maker
 from src.hotels.api.dependencies import PaginationHotels
 from src.hotels.schemas.hotels import Hotel, HotelPATCH, HotelAdd
 from src.repositories.hotels import HotelsRepository
+from src.repositories.rooms import RoomsRepository
 
 router_hotels = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
+@router_hotels.get("/{hotel_id}")
+async def get_distinct_rooms_in_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        rooms_in_hotel = await RoomsRepository(session).get_in_params(hotel_id=hotel_id)
+        return {'Rooms in hotel': rooms_in_hotel}
 
 
 
