@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    MINIO_REGION: str
+    MINIO_BUCKET: str
+    MINIO_ENDPOINT_URL: str
 
     @property
     def DB_URL(self):

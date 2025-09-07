@@ -49,7 +49,7 @@ class BaseRepository:
         return self.schema.model_validate(model, from_attributes=True)
 
 
-    async def update(self, data: BaseModel, exclude_unset: bool = False,**filter_by) -> None :
+    async def update(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None :
         update_stm = (
             update(self.model)
             .filter_by(**filter_by)
