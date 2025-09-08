@@ -14,3 +14,5 @@ class HotelPATCH(BaseModel):
     location: str | None = Field(None)
     address: str | None = Field(None)
     phone: int | None = Field(None)
+
+

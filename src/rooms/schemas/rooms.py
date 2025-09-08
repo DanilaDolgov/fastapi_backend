@@ -33,9 +33,5 @@ class RoomPatchRequest(BaseModel):
     price: int | None = Field(None)
     quantity: int | None = Field(None)
 
-class RoomPATCH(BaseModel):
+class RoomPATCH(RoomPatchRequest):
     hotel_id: int
-    title: str | None = Field(None)
-    description: str | None = Field(None)
-    price: int | None = Field(None)
-    quantity: int | None = Field(None)

@@ -62,7 +62,7 @@ async def update_room(hotel_id: int, room_id: int, data_room: RoomForm):
 
 @router_rooms.patch("/{hotel_id}/{room_id}")
 async def update_patch_room(hotel_id: int, room_id: int, data_room: RoomPatchRequest):
-    _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump())
+    _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump(exclude_unset=True))
     async with async_session_maker() as session:
         await RoomsRepository(session).update(_res, exclude_unset=True, id=room_id)
         await session.commit()
