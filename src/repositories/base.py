@@ -1,8 +1,5 @@
 from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete
-from sqlalchemy.orm import sessionmaker
-
-from src.hotels.schemas.hotels import Hotel
 
 
 class BaseRepository:
@@ -34,7 +31,7 @@ class BaseRepository:
             return self.schema.model_validate(model, from_attributes=True)
         return None
 
-    async def get_in_params(self, **filter_by):
+    async def get_in_params(self, *args, **filter_by):
         query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         if result:

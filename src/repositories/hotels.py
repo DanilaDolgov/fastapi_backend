@@ -1,7 +1,7 @@
 from sqlalchemy import select, func
 
-from src.hotels.models.hotels import HotelsOrm
-from src.hotels.schemas.hotels import Hotel
+from src.models.hotels import HotelsOrm
+from src.schemas.hotels import Hotel
 from src.repositories.base import BaseRepository
 
 

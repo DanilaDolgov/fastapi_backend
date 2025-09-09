@@ -1,28 +1,32 @@
-from fastapi import Query, APIRouter, Body
-from datetime import date
+from fastapi import APIRouter
 
-from src.bookings.schemas.bookings import BookingAdd, Booking
-from src.hotels.api.dependencies import UserIdDep
-from src.database import async_session_maker
-from src.hotels.api.dependencies import PaginationHotels, DBDep
-from src.hotels.schemas.hotels import Hotel, HotelPATCH, HotelAdd
-from src.repositories.bookings import BookingsRepository
-from src.repositories.hotels import HotelsRepository
-from src.repositories.rooms import RoomsRepository
-
+from src.schemas.bookings import BookingAdd, Booking, BookingRequest
+from src.dependencies.dependencies import UserIdDep, DBDep, Pagination
 
 booking_router = APIRouter(prefix="/booking", tags=["Бронирование"])
 
 
-@booking_router.post("/{room_id}")
-async def create_booking(data_booking: BookingAdd, room_id: int, user_id: UserIdDep):
+@booking_router.post("")
+async def create_booking(db: DBDep, data_booking: BookingRequest, user_id: UserIdDep):
     if user_id:
-        async with async_session_maker() as session:
-            room = await RoomsRepository(session).get_one_or_none(id=room_id)
-            _res = Booking(user_id=user_id, room_id=room.id, **data_booking.model_dump(), price=room.price)
-            booking = await BookingsRepository(session).add(_res)
-            await session.commit()
-            return {'Status': 'Ok', 'data': booking}
+        room = await db.rooms.get_one_or_none(id=data_booking.room_id)
+        _res = BookingAdd(user_id=user_id, **data_booking.model_dump(), price=room.price)
+        booking = await db.booking.add(_res)
+        await db.commit()
+
+        return {'Status': 'Ok', 'data': booking}
+
+@booking_router.get("")
+async def get_bookings(db: DBDep, pagination: Pagination):
+    per_page = pagination.per_page or 5
+    return await db.booking.get_all(limit=per_page,
+                                    offset=per_page * (pagination.page - 1))
+
+@booking_router.get("/me")
+async def get_bookings(db: DBDep, user_id: UserIdDep):
+    if user_id:
+        return await db.booking.get_in_params(user_id=user_id)
+
 
 
 

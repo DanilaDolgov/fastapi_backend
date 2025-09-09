@@ -6,6 +6,7 @@ from fastapi import Query, Depends, Request, HTTPException
 
 from src.database import async_session_maker
 from src.services.auth import AuthService
+from src.services.s3 import S3Client
 from src.utils.db_manager import DBManager
 
 
@@ -14,7 +15,7 @@ class PaginationParams(BaseModel):
     per_page: Annotated[int | None, Query(None, ge=1, lt=30)]
 
 
-PaginationHotels = Annotated[PaginationParams, Depends()]
+Pagination = Annotated[PaginationParams, Depends()]
 
 
 def get_token(request: Request):
@@ -31,8 +32,6 @@ def get_current_user_id(token: str = Depends(get_token)):
 
 UserIdDep = Annotated[int, Depends(get_current_user_id)]
 
-PaginationRooms = Annotated[PaginationParams, Depends()]
-
 def get_db_manager():
     return DBManager(session_factory=async_session_maker)
 
@@ -42,3 +41,9 @@ async def get_db():
 
 
 DBDep = Annotated[DBManager, Depends(get_db)]
+
+def get_client():
+    return S3Client()
+
+
+S3Dep = Annotated[S3Client, Depends(get_client)]
