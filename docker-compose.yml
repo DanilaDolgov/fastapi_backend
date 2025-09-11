@@ -27,6 +27,9 @@ services:
       MINIO_HTTP_TRACE: /tmp/minio
       DSN_MINIO: http://127.0.0.1:9000
     command: [ "server", "--console-address", ":9001", "/data" ]
+    volumes:
+      - ./minio_data:/data
 
 volumes:
   postgres_data:
+  minio_data:

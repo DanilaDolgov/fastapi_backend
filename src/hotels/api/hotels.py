@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import Query, APIRouter, Body
 from src.database import async_session_maker
 from src.dependencies.dependencies import DBDep, Pagination
@@ -19,15 +21,23 @@ async def get_distinct_rooms_in_hotel(hotel_id: int):
 async def get_hotels(
         pagination: Pagination,
         db: DBDep,
+        date_to: date,
+        date_from: date,
         title: str | None = Query(None, description="Название отеля"),
-        location: str | None = Query(None, description="Адрес отеля")
+        location: str | None = Query(None, description="Адрес отеля"),
 ):
     per_page = pagination.per_page or 5
-    return await db.hotels.get_all(
-        location=location,
-        title=title,
-        limit=per_page,
-        offset=per_page * (pagination.page - 1))
+    return await db.hotels.get_filtered_by_time(date_from=date_from,
+                                                date_to=date_to,
+                                                title=title,
+                                                location=location,
+                                                limit=per_page,
+                                                offset=per_page * (pagination.page - 1))
+    # return await db.hotels.get_all(
+    #     location=location,
+    #     title=title,
+    #     limit=per_page,
+    #     offset=per_page * (pagination.page - 1))
 
 
 @router_hotels.delete("/{hotel_id}")

@@ -44,7 +44,7 @@ class S3Client:
                     },
                     ExpiresIn=expires_in
                 )
-                urls.append({f'{key}': f'{url}'})
+                urls.append(url)
             return urls
 
     async def get_download_url(self, key: str, expires_in: int = 3600) -> str:

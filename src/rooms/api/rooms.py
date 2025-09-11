@@ -1,8 +1,9 @@
-from fastapi import  APIRouter, File, UploadFile, Depends
+from datetime import date
+
+from fastapi import  APIRouter, File, UploadFile, Depends, Query
 from typing import List
 
 from src.dependencies.dependencies import DBDep, S3Dep
-from src.services.s3 import S3Client
 from src.schemas.rooms import RoomAdd, RoomPATCH, RoomForm, RoomPatchRequest, as_form
 
 router_rooms = APIRouter(prefix="/rooms", tags=["Номера"])
@@ -40,6 +41,23 @@ async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int):
     urls_image = await s3.generate_presigned_urls_by_prefix(prefix=path)
 
     return {'Room': room, 'image': urls_image}
+
+@router_rooms.get("/{hotel_id}")
+async def get_rooms(hotel_id: int,
+                    s3: S3Dep,
+                    db: DBDep,
+                    date_from: date = Query(example="2025-09-20"),
+                    date_to: date = Query(example="2025-09-30")
+                    ):
+    rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id, date_from=date_from, date_to=date_to)
+    if rooms:
+        data_rooms = [{f'{room.id}': f'{room}',
+                       'images': await s3.generate_presigned_urls_by_prefix(prefix=f'rooms/{room.id}')}
+                      for room in rooms]
+        return {'Status': 'Ok', 'rooms': data_rooms}
+    else:
+        return {'Status': 'Ok', 'data': 'empty'}
+
 
 @router_rooms.delete("/{hotel_id}/{room_id}")
 async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int):
