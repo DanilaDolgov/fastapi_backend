@@ -11,6 +11,7 @@ from src.users.api.auth import router as router_auth
 from src.hotels.api.hotels import router_hotels
 from src.rooms.api.rooms import router_rooms
 from src.bookings.api.bookings import booking_router as router_booking
+from src.facilities.api.facilities import router_facilities
 from src.database import *
 
 app = FastAPI(docs_url=None)
@@ -18,6 +19,7 @@ app.include_router(router_auth)
 app.include_router(router_hotels)
 app.include_router(router_rooms)
 app.include_router(router_booking)
+app.include_router(router_facilities)
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():

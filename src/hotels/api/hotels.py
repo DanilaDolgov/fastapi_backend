@@ -33,11 +33,6 @@ async def get_hotels(
                                                 location=location,
                                                 limit=per_page,
                                                 offset=per_page * (pagination.page - 1))
-    # return await db.hotels.get_all(
-    #     location=location,
-    #     title=title,
-    #     limit=per_page,
-    #     offset=per_page * (pagination.page - 1))
 
 
 @router_hotels.delete("/{hotel_id}")
