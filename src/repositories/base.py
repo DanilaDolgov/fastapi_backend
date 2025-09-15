@@ -1,5 +1,7 @@
+from operator import or_
+
 from pydantic import BaseModel
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, and_
 
 
 class BaseRepository:
@@ -42,11 +44,33 @@ class BaseRepository:
 
     async def add(self, data: BaseModel):
         added_stm = insert(self.model).values(**data.model_dump()).returning(self.model)
-        print(added_stm.compile(compile_kwargs={"literal_binds": True}))
+        # print(added_stm.compile(compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(added_stm)
         model = result.scalars().one()
         return self.schema.model_validate(model, from_attributes=True)
 
+    async def add_bulk(self, data: list[BaseModel]):
+        added_stm = insert(self.model).values([item.model_dump() for item in data])
+        print(added_stm.compile(compile_kwargs={"literal_binds": True}))
+        await self.session.execute(added_stm)
+
+    async def delete_bulk(self, data: list[BaseModel]):
+        rows = [item.model_dump() for item in data]
+        conditions = []
+        for row in rows:
+            cond = and_(*[getattr(self.model, k) == v for k, v in row.items()])
+            conditions.append(cond)
+        if not conditions:
+            return
+        elif len(conditions) == 1:
+            final_condition = conditions[0]
+        else:
+            final_condition = or_(*conditions)
+
+        delete_stm = delete(self.model).where(final_condition)
+
+        print(delete_stm.compile(compile_kwargs={"literal_binds": True}))
+        await self.session.execute(delete_stm)
 
     async def update(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None :
         update_stm = (

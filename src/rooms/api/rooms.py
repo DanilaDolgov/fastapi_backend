@@ -1,27 +1,43 @@
+import json
 from datetime import date
 
-from fastapi import  APIRouter, File, UploadFile, Depends, Query
+from fastapi import APIRouter, File, UploadFile, Query, Form
 from typing import List
-
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 from src.dependencies.dependencies import DBDep, S3Dep
-from src.schemas.rooms import RoomAdd, RoomPATCH, RoomForm, RoomPatchRequest, as_form
+from src.schemas.facilities import RoomsFacilitiesAdd
+from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest
 
 router_rooms = APIRouter(prefix="/rooms", tags=["Номера"])
 
-
+def unique_diff_room_facilities(room_id: int, list1: list, list2: list):
+    return (
+        [RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x) for x in list1 if x not in list2],
+        [RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x) for x in list2 if x not in list1]
+    )
 
 @router_rooms.post("/{hotel_id}")
 async def create_rooms(
         hotel_id: int,
         s3: S3Dep,
         db: DBDep,
-        data_room: RoomForm = Depends(as_form),
-        files: List[UploadFile] | None = File(None)):
+        data_room_str: str = Form(..., description=json.dumps({
+                                                        "title": "string",
+                                                        "description": "string",
+                                                        "price": 0,
+                                                        "quantity": 0,
+                                                        "facilities_ids": [1, 2] })),
+        files: List[UploadFile] | None = File(None)
+        ):
+    data_room = RoomAddRequest(**json.loads(data_room_str))
     _res = RoomAdd(
         hotel_id=hotel_id,
         **data_room.model_dump()
     )
     room = await db.rooms.add(_res)
+    roms_facilities = [RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r) for r in data_room.facilities_ids]
+    await db.rooms_facilities.add_bulk(roms_facilities)
     await db.commit()
     if files:
         for file in files:
@@ -69,10 +85,27 @@ async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int):
     return {'Status': 'Ok'}
 
 @router_rooms.put("/{hotel_id}/{room_id}")
-async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomForm):
+async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomAddRequest):
     _res = RoomAdd(hotel_id= hotel_id, **data_room.model_dump())
     await db.rooms.update(_res, id=room_id)
-    await db.commit()
+    try:
+        if data_room.facilities_ids and 0 not in data_room.facilities_ids:
+            facilities_ids = [facility_id.facilities_id for facility_id in
+                              await db.rooms_facilities.get_in_params(rooms_id=room_id)]
+            del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(room_id,
+                                                                                 facilities_ids,
+                                                                                 data_room.facilities_ids)
+            if add_facilities_ids:
+                await db.rooms_facilities.add_bulk(add_facilities_ids)
+            if del_facilities_ids:
+                await db.rooms_facilities.delete_bulk(del_facilities_ids)
+        await db.commit()
+    except IntegrityError as e:
+        await db.session.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="One of the facilities_id does not exist"
+        )
 
     return {'Status': 'Ok'}
 
@@ -80,6 +113,16 @@ async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomFor
 async def update_patch_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomPatchRequest):
     _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump(exclude_unset=True))
     await db.rooms.update(_res, exclude_unset=True, id=room_id)
+    if data_room.facilities_ids:
+        facilities_ids = [facility_id.facilities_id for facility_id in
+                          await db.rooms_facilities.get_in_params(rooms_id=room_id)]
+        del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(room_id,
+                                                                             facilities_ids,
+                                                                             data_room.facilities_ids)
+        if add_facilities_ids:
+            await db.rooms_facilities.add_bulk(add_facilities_ids)
+        if del_facilities_ids:
+            await db.rooms_facilities.delete_bulk(del_facilities_ids)
     await db.commit()
 
     return {'Status': 'Ok'}
