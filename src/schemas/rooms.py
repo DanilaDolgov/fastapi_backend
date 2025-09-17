@@ -11,6 +11,8 @@ from fastapi import Form, File, UploadFile, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 
+from src.schemas.facilities import Facilities
+
 
 class RoomAddRequest(BaseModel):
     title: str
@@ -33,6 +35,9 @@ class Room(RoomAdd):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+class RoomWithReal(Room):
+    facilities: list[Facilities]
 
 class RoomPatchRequest(BaseModel):
     title: str | None = Field(None)

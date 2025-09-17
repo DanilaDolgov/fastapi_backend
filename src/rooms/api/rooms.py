@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from src.dependencies.dependencies import DBDep, S3Dep
 from src.schemas.facilities import RoomsFacilitiesAdd
-from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest
+from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest, RoomWithReal
 
 router_rooms = APIRouter(prefix="/rooms", tags=["Номера"])
 
@@ -53,7 +53,7 @@ async def create_rooms(
 @router_rooms.get("/{hotel_id}/{room_id}")
 async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int):
     room = await db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
-    path = f'rooms/{room_id}'
+    path = f'rooms/{room_id}/'
     urls_image = await s3.generate_presigned_urls_by_prefix(prefix=path)
 
     return {'Room': room, 'image': urls_image}
@@ -67,8 +67,8 @@ async def get_rooms(hotel_id: int,
                     ):
     rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id, date_from=date_from, date_to=date_to)
     if rooms:
-        data_rooms = [{f'{room.id}': f'{room}',
-                       'images': await s3.generate_presigned_urls_by_prefix(prefix=f'rooms/{room.id}')}
+        data_rooms = [{room.id: {'data_room': room,
+                       'images': await s3.generate_presigned_urls_by_prefix(prefix=f'rooms/{room.id}/')}}
                       for room in rooms]
         return {'Status': 'Ok', 'rooms': data_rooms}
     else:
