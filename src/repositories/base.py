@@ -3,10 +3,12 @@ from operator import or_
 from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete, and_
 
+from src.repositories.mapper.base import DataMapper
+
 
 class BaseRepository:
     model = None
-    schema: BaseModel = None
+    mapper: DataMapper = None
 
     def __init__(self, session):
         self.session = session
@@ -14,7 +16,7 @@ class BaseRepository:
     async def get_all(self, *args, **kwargs):
         query = select(self.model)
         result = await self.session.execute(query)
-        return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()]
+        return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
 
     async def get_one(self, **kwargs):
         query = select(self.model).filter_by(**kwargs)
@@ -22,7 +24,7 @@ class BaseRepository:
         print(query.compile(compile_kwargs={"literal_binds": True}))
         model = result.scalars().one_or_none()
         if model:
-            return self.schema.model_validate(model, from_attributes=True)
+            return self.mapper.map_to_domain_entity(model)
         return None
 
     async def get_one_or_none(self, **filter_by):
@@ -30,7 +32,7 @@ class BaseRepository:
         result = await self.session.execute(query)
         model = result.scalars().one_or_none()
         if model:
-            return self.schema.model_validate(model, from_attributes=True)
+            return self.mapper.map_to_domain_entity(model)
         return None
 
     async def get_in_params(self, *args, **filter_by):
@@ -39,7 +41,7 @@ class BaseRepository:
                 .filter_by(**filter_by))
         result = await self.session.execute(query)
         if result:
-            return [self.schema.model_validate(model, from_attributes=True) for model in result.scalars().all()]
+            return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
         return None
 
     async def add(self, data: BaseModel):
@@ -47,7 +49,7 @@ class BaseRepository:
         # print(added_stm.compile(compile_kwargs={"literal_binds": True}))
         result = await self.session.execute(added_stm)
         model = result.scalars().one()
-        return self.schema.model_validate(model, from_attributes=True)
+        return self.mapper.map_to_domain_entity(model)
 
     async def add_bulk(self, data: list[BaseModel]):
         added_stm = insert(self.model).values([item.model_dump() for item in data])

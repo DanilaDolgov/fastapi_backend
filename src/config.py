@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     MINIO_REGION: str
     MINIO_BUCKET: str
     MINIO_ENDPOINT_URL: str
+    REDIS_HOST: str
+    REDIS_PORT: int
 
     @property
     def DB_URL(self):
