@@ -5,6 +5,7 @@ from fastapi_cache.decorator import cache
 from src.dependencies.dependencies import DBDep
 from src.schemas.facilities import FacilitiesRequest
 from src.utils.decorator_cache import redis_cache
+from src.tasks.tasks import test_task
 
 router_facilities = APIRouter(prefix="/facilities", tags=["Удобства"])
 
@@ -32,6 +33,7 @@ async def get_all_facilities(db: DBDep):
 async def add_facilities(db:DBDep, data_facilities: FacilitiesRequest):
     facilities = await db.facilities.add(data_facilities)
     await db.commit()
+    test_task.delay("привет celery")
 
     return {'Status': 'Ok', 'facilities': facilities}
 

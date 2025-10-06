@@ -16,11 +16,11 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.users.api.auth import router as router_auth
-from src.hotels.api.hotels import router_hotels
-from src.rooms.api.rooms import router_rooms
-from src.bookings.api.bookings import booking_router as router_booking
-from src.facilities.api.facilities import router_facilities
+from src.api.auth import router as router_auth
+from src.api.hotels import router_hotels
+from src.api.rooms import router_rooms
+from src.api.bookings import booking_router as router_booking
+from src.api.facilities import router_facilities
 from src.rate_many.api.rate import many_router
 from src.utils.redis_setting import redis_manager
 

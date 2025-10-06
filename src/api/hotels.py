@@ -9,11 +9,6 @@ from src.repositories.rooms import RoomsRepository
 router_hotels = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
-@router_hotels.get("/{hotel_id}")
-async def get_distinct_rooms_in_hotel(hotel_id: int):
-    async with async_session_maker() as session:
-        rooms_in_hotel = await RoomsRepository(session).get_in_params(hotel_id=hotel_id)
-        return {'Rooms in hotel': rooms_in_hotel}
 
 
 
@@ -37,14 +32,14 @@ async def get_hotels(
 
 @router_hotels.delete("/{hotel_id}")
 async def delete_hotels(db: DBDep, hotel_id: int):
-    await db.hotels.delete(hotel_id=hotel_id)
+    await db.hotels.delete(id=hotel_id)
     await db.commit()
 
     return {'Status': 'Ok'}
 
 @router_hotels.get("/{hotel_id}")
 async def get_hotel_one(db: DBDep, hotel_id: int):
-    hotel = await db.hotels.get_one_or_none(hotel_id=hotel_id)
+    hotel = await db.hotels.get_one_or_none(id=hotel_id)
 
     return {'Hotel': hotel}
 

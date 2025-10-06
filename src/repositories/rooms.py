@@ -5,12 +5,13 @@ from sqlalchemy.orm import joinedload
 from src.models.bookings import BookingsOrm
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
+from src.repositories.mapper.mapper import RoomDataMapper
 from src.schemas.rooms import Room, RoomWithReal
 
 
 class RoomsRepository(BaseRepository):
     model = RoomsOrm
-    schema = Room
+    mapper = RoomDataMapper
 
     async def get_filtered_by_time(self,
                                    hotel_id,

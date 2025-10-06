@@ -52,7 +52,7 @@ class HotelsRepository(BaseRepository):
             stmt = stmt.filter(func.lower(HotelsOrm.location).like(f'%{location.strip().lower()}%'))
         if title:
             stmt = stmt.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
-
+        print(stmt)
         stmt = (stmt
                 .limit(limit)
                 .offset(offset))

@@ -1,5 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from dotenv import load_dotenv
+import os
+from pydantic import EmailStr
+
+
+dotenv_path = os.path.join(os.path.dirname(__file__), "../.env")
+load_dotenv(dotenv_path)
 
 
 class Settings(BaseSettings):
@@ -16,16 +22,24 @@ class Settings(BaseSettings):
     MINIO_REGION: str
     MINIO_BUCKET: str
     MINIO_ENDPOINT_URL: str
+    MINIO_PUBLIC_URL: str
     REDIS_HOST: str
     REDIS_PORT: int
+
+    SMTP_SERVER: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    FROM_EMAIL: str
 
     @property
     def DB_URL(self):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
-    model_config = SettingsConfigDict(env_file="../.env")
+    @property
+    def DB_REDIS(self):
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
-    # class Config:
-    #     env_file = ".env"
+    model_config = SettingsConfigDict(env_file="../.env")
 
 settings = Settings()

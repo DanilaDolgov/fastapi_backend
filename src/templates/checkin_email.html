@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Бронирование — {{ room_title }}</title>
+  <style>
+    :root{
+      --card-bg:#fff;
+      --muted:#6b7280;
+      --accent:#0f62fe;
+      --container-w:1000px;
+    }
+    body{
+      font-family:Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:#f3f4f6;
+      margin:20px;
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+    }
+    .wrap{
+      max-width:var(--container-w);
+      margin:0 auto;
+      background:var(--card-bg);
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 6px 24px rgba(15,23,42,0.08);
+      display:flex;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+    .left{
+      flex:1 1 520px;
+      min-width:280px;
+    }
+    .title{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      flex-wrap:wrap;
+      gap:12px;
+    }
+    .title h1{margin:0;font-size:22px;}
+    .hotel{color:var(--muted);font-size:14px;}
+    .info-box{
+      background:#f9fafb;
+      border-radius:10px;
+      padding:14px;
+      margin-top:14px;
+    }
+    .info-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:8px 0;
+    }
+    .label{color:var(--muted);font-size:13px;min-width:140px;}
+    .value{font-weight:600;font-size:14px;}
+    .price{font-size:18px;font-weight:700;color:#0b1220;}
+    .right{width:420px;min-width:280px;}
+    .slider{
+      position:relative;
+      border-radius:10px;
+      overflow:hidden;
+      display:grid;
+      aspect-ratio:4/3;
+      background:#e5e7eb;
+    }
+    .slider img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      opacity:0;
+      transform:scale(1.05);
+      transition:opacity .6s ease,transform 1s ease;
+      grid-area:1/1;
+    }
+    .slider img.active{
+      opacity:1;
+      transform:scale(1);
+      z-index:2;
+    }
+    .slider-buttons{
+      position:absolute;
+      top:50%;
+      left:0;
+      right:0;
+      display:flex;
+      justify-content:space-between;
+      transform:translateY(-50%);
+      padding:0 8px;
+      pointer-events:none;
+    }
+    .slider-buttons button{
+      pointer-events:all;
+      background:rgba(0,0,0,0.45);
+      border:none;
+      color:#fff;
+      width:36px;
+      height:36px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:background .3s;
+    }
+    .slider-buttons button:hover{
+      background:rgba(0,0,0,0.6);
+    }
+    .dots{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-top:8px;
+    }
+    .dot{
+      width:10px;
+      height:10px;
+      background:#cbd5e1;
+      border-radius:50%;
+      cursor:pointer;
+      transition:background .3s;
+    }
+    .dot.active{background:var(--accent);}
+    .facilities{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-start;
+    }
+    .facility{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:var(--accent);
+      color:#fff;
+      padding:6px 10px;
+      border-radius:8px;
+      font-size:13px;
+    }
+    @media(max-width:980px){
+      .wrap{padding:14px;}
+      .right{width:100%;order:2;}
+      .left{order:1;width:100%;}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="left">
+      <div class="title">
+        <div>
+          <h1>{{ room_title }} — номер</h1>
+          <div class="hotel">Отель: {{ hotel_title }} · {{ hotel_location }}</div>
+        </div>
+        <div class="price">{{ price }} ₽</div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-row">
+          <div class="label">Описание:</div>
+          <div class="value">{{ room_description }}</div>
+        </div>
+
+        <h3 style="margin:6px 0 8px 0;">Данные пользователя</h3>
+        <div class="info-row">
+          <div class="label">Email:</div>
+          <div class="value">{{ email }}</div>
+        </div>
+
+        <h3 style="margin:6px 0 8px 0;">Данные размещения</h3>
+        <div class="info-row">
+          <div class="label">Дата заселения:</div>
+          <div class="value">{{ date_from }}</div>
+        </div>
+        <div class="info-row">
+          <div class="label">Дата выезда:</div>
+          <div class="value">{{ date_to }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="slider" id="slider">
+        {% for url in images %}
+          <img src="{{ url }}" class="{% if loop.first %}active{% endif %}">
+        {% endfor %}
+        <div class="slider-buttons">
+          <button id="prev">&lt;</button>
+          <button id="next">&gt;</button>
+        </div>
+      </div>
+
+      <div class="dots" id="dots">
+        {% for url in images %}
+          <div class="dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></div>
+        {% endfor %}
+      </div>
+
+      <div class="facilities">
+        {% for name in facilities_name %}
+          <div class="facility">{{ name }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const imgs = Array.from(document.querySelectorAll('#slider img'));
+      const dots = Array.from(document.querySelectorAll('#dots .dot'));
+      const prev = document.getElementById('prev');
+      const next = document.getElementById('next');
+      let i = 0;
+      let timer;
+
+      function show(n){
+        imgs.forEach((img,j)=>img.classList.toggle('active',j===n));
+        dots.forEach((d,j)=>d.classList.toggle('active',j===n));
+        i = n;
+      }
+
+      function nextSlide(){ show((i+1)%imgs.length); }
+      function prevSlide(){ show((i-1+imgs.length)%imgs.length); }
+
+      next.onclick = ()=>{ nextSlide(); reset(); };
+      prev.onclick = ()=>{ prevSlide(); reset(); };
+      dots.forEach((d,idx)=>d.onclick=()=>{show(idx);reset();});
+
+      function start(){ timer=setInterval(nextSlide,5000); }
+      function reset(){ clearInterval(timer); start(); }
+      start();
+    })();
+  </script>
+</body>
+</html>

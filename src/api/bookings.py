@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from src.schemas.bookings import BookingAdd, Booking, BookingRequest
-from src.dependencies.dependencies import UserIdDep, DBDep, Pagination
+from src.dependencies.dependencies import UserIdDep, DBDep, Pagination, S3Dep
 
 booking_router = APIRouter(prefix="/booking", tags=["Бронирование"])
 
@@ -26,6 +26,14 @@ async def get_bookings(db: DBDep, pagination: Pagination):
 async def get_bookings(db: DBDep, user_id: UserIdDep):
     if user_id:
         return await db.booking.get_in_params(user_id=user_id)
+
+@booking_router.get("/users_checkin")
+async def get_users_checkin_in_rooms_today(db: DBDep, s3: S3Dep):
+    results_bookings = await db.booking.user_checkin_room_email()
+    for result_booking in results_bookings:
+        result_booking["images"] = await s3.generate_presigned_urls_by_prefix(prefix=f'rooms/{result_booking["room_id"]}/')
+    return results_bookings
+
 
 
 
