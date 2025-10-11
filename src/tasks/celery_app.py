@@ -13,7 +13,7 @@ celery_instance = Celery(
 )
 
 celery_instance.conf.beat_schedule = {
-    "Lubos-nazvanis": {
+    "send_mail_checkin": {
         "task": "booking_today_checkin",  # имя задачи
         "schedule": crontab(hour=0, minute=0),  # каждый день в полночь
     },

@@ -25,7 +25,7 @@ def get_token(request: Request):
     return token
 
 def get_current_user_id(token: str = Depends(get_token)):
-    data = AuthService().decode_token(token)
+    data = AuthService().encode_token(token)
     return data["user_id"]
 
 

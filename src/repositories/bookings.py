@@ -16,7 +16,7 @@ class BookingsRepository(BaseRepository):
     model = BookingsOrm
     mapper = BookingDataMapper
 
-    async def user_checkin_room_email(self):
+    async def user_checkin_room_email(self) -> list[dict]:
         query = (
             select(
                 BookingsOrm.date_to,

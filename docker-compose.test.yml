@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:alpine
+    container_name: booking-postgres-test
+    env_file:
+      - .env_test
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+
+
+
+
