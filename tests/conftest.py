@@ -1,6 +1,8 @@
 import json
 
 import asyncio
+from typing import Any, AsyncGenerator
+
 import pytest
 import os
 from httpx import AsyncClient, ASGITransport
@@ -22,10 +24,12 @@ path_files = os.path.join(os.path.dirname(__file__), "test_data")
 @pytest.fixture(scope="session", autouse=True)
 async def check_mode():
     assert settings.MODE == "TEST"
-    print(settings.MODE)
-    print(os.listdir(path_files))
-    for file_name in os.listdir(path_files):
-        print(path_files + file_name)
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def db():
+    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+        yield db
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database(check_mode):
@@ -38,24 +42,26 @@ async def setup_database(check_mode):
         if file_name.endswith(".json"):
             file_path = os.path.join(path_files, file_name)
             with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)  # загружаем весь JSON целиком
+                data = json.load(f)
                 if 'hotels' in file_name:
-                    hotel = [HotelAdd(**d) for d in data]
-                    async with DBManager(session_factory=async_session_maker_null_pool) as db:
-                        hotel = await db.hotels.add_bulk(hotel)
-                        await db.commit()
+                    hotels = [HotelAdd(**d) for d in data]
                 if 'room' in file_name:
                     rooms = [RoomAdd(**d) for d in data]
-                    async with DBManager(session_factory=async_session_maker_null_pool) as db:
-                        room = await db.rooms.add_bulk(rooms)
-                        await db.commit()
+    async with DBManager(session_factory=async_session_maker_null_pool) as db_:
+        await db_.hotels.add_bulk(hotels)
+        await  db_.rooms.add_bulk(rooms)
+        await db_.commit()
+
+@pytest.fixture(scope="session")
+async def ac() -> AsyncGenerator[AsyncClient, Any]:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as ac:
+        yield ac
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def create_user(setup_database):
-    async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as ac:
-        await ac.post(url="/auth/register",
-                      json={
-                          "email": "test@test.com",
-                          "password": "1234"
-                      })
+async def create_user(ac, setup_database):
+    await ac.post(url="/auth/register",
+                  json={
+                      "email": "test@test.com",
+                      "password": "1234"
+                  })
