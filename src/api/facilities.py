@@ -33,7 +33,7 @@ async def get_all_facilities(db: DBDep):
 async def add_facilities(db:DBDep, data_facilities: FacilitiesRequest):
     facilities = await db.facilities.add(data_facilities)
     await db.commit()
-    test_task.delay("привет celery")
+    # test_task.delay("привет celery")
 
     return {'Status': 'Ok', 'facilities': facilities}
 

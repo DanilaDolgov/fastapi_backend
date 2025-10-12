@@ -67,7 +67,7 @@ async def get_rooms(hotel_id: int,
                     ):
     rooms = await db.rooms.get_filtered_by_time(hotel_id=hotel_id, date_from=date_from, date_to=date_to)
     if rooms:
-        data_rooms = [{room.id: {'data_room': room,
+        data_rooms = [{'room_id': room.id, room.id: {'data_room': room,
                        'images': await s3.generate_presigned_urls_by_prefix(prefix=f'rooms/{room.id}/')}}
                       for room in rooms]
         return {'Status': 'Ok', 'rooms': data_rooms}

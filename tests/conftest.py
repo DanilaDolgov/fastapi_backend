@@ -5,10 +5,14 @@ from typing import Any, AsyncGenerator
 
 import pytest
 import os
+
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from httpx import AsyncClient, ASGITransport
 
 from src.config import settings
 from src.database import Base, engine_null_pool, async_session_maker_null_pool
+from src.dependencies.dependencies import get_db
 from src.main import app
 from src.models import *
 
@@ -26,10 +30,18 @@ async def check_mode():
     assert settings.MODE == "TEST"
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def db():
+async def get_db_not_pool():
     async with DBManager(session_factory=async_session_maker_null_pool) as db:
         yield db
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def db():
+   async for db in get_db_not_pool():
+       yield db
+
+
+app.dependency_overrides[get_db] = get_db_not_pool
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database(check_mode):
@@ -65,3 +77,7 @@ async def create_user(ac, setup_database):
                       "email": "test@test.com",
                       "password": "1234"
                   })
+
+@pytest.fixture(autouse=True, scope="session")
+def init_cache():
+    FastAPICache.init(InMemoryBackend(), prefix="test-cache")

@@ -75,11 +75,14 @@ class S3Client:
             )
             return url
 
-    async def generate_presigned_urls_by_prefix(self, prefix: str, expires_in: int = 3600) -> list[str]:
+    async def generate_presigned_urls_by_prefix(self, prefix: str, expires_in: int = 3600) -> list[str] | None:
         """Получаем presigned URL для всех объектов с заданным префиксом"""
         keys = await self.list_keys(prefix)
-        urls = []
-        for key in keys:
-            url = await self.generate_presigned_url(key, expires_in)
-            urls.append(url)
-        return urls
+        if keys:
+            urls = []
+            for key in keys:
+                url = await self.generate_presigned_url(key, expires_in)
+                urls.append(url)
+            return urls
+        else:
+            return None
