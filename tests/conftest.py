@@ -1,29 +1,28 @@
 import json
-
-import asyncio
 from typing import Any, AsyncGenerator
-
 import pytest
 import os
-
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient, ASGITransport, Cookies
+from dotenv import load_dotenv
+from unittest import mock
+
+mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 from src.config import settings
 from src.database import Base, engine_null_pool, async_session_maker_null_pool
 from src.dependencies.dependencies import get_db
 from src.main import app
 from src.models import *
-
-from dotenv import load_dotenv
-
 from src.schemas.hotels import HotelAdd
 from src.schemas.rooms import RoomAdd
 from src.utils.db_manager import DBManager
 
 load_dotenv(".env_test")
 path_files = os.path.join(os.path.dirname(__file__), "test_data")
+
+
 
 @pytest.fixture(scope="session", autouse=True)
 async def check_mode():
@@ -65,7 +64,7 @@ async def setup_database(check_mode):
         await db_.commit()
 
 @pytest.fixture(scope="session")
-async def ac() -> AsyncGenerator[AsyncClient, Any]:
+async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as ac:
         yield ac
 
@@ -78,6 +77,39 @@ async def create_user(ac, setup_database):
                       "password": "1234"
                   })
 
-@pytest.fixture(autouse=True, scope="session")
-def init_cache():
-    FastAPICache.init(InMemoryBackend(), prefix="test-cache")
+@pytest.fixture(scope="session", autouse=True)
+async def facility(ac, setup_database):
+    response = await ac.post("/facilities", json={"title": "SPA"})
+    assert response.status_code == 200
+
+# @pytest.fixture(autouse=True, scope="session")
+# def init_cache():
+#     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+
+
+# @router.post(path='/login')
+# async def login_user(db: DBDep,
+#         data: UserRequestAdd,
+#         response: Response
+# ):
+#     user = await db.user.get_user_with_hashed_password(email=data.email)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="User with this email not registration!")
+#     if not AuthService().verify_password(data.password, user.hash_password):
+#         raise HTTPException(status_code=401, detail="Password is not correct!")
+#     access_token =  AuthService().create_access_token({"user_id": user.id})
+#     response.set_cookie("access_token", access_token)
+#     return {'access_token': access_token}
+
+@pytest.fixture(scope="session", autouse=True)
+async def authenticated_ac(create_user, ac, setup_database):
+    response = await ac.post(url="/auth/login",
+                  json={
+                      "email": "test@test.com",
+                      "password": "1234"
+                  })
+
+    assert "access_token=" in response.headers.get("set-cookie")
+    access_token = response.headers.get("set-cookie").split(";")[0].split("=")[1]
+    ac.cookies.set("access_token", access_token)
+    yield ac

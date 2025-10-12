@@ -1,6 +1,9 @@
 import json
+from typing import List, Dict
+
 from fastapi import APIRouter
 from fastapi_cache.decorator import cache
+from pydantic import BaseModel
 
 from src.dependencies.dependencies import DBDep
 from src.schemas.facilities import FacilitiesRequest
@@ -13,7 +16,7 @@ router_facilities = APIRouter(prefix="/facilities", tags=["Удобства"])
 @router_facilities.get("")
 # @redis_cache(ttl=60)
 @cache(expire=60)
-async def get_all_facilities(db: DBDep):
+async def get_all_facilities(db: DBDep) -> List:
     facility = await db.facilities.get_all()
     return facility
 
@@ -30,7 +33,7 @@ async def get_all_facilities(db: DBDep):
 
 
 @router_facilities.post("")
-async def add_facilities(db:DBDep, data_facilities: FacilitiesRequest):
+async def add_facilities(db:DBDep, data_facilities: FacilitiesRequest) -> dict:
     facilities = await db.facilities.add(data_facilities)
     await db.commit()
     # test_task.delay("привет celery")
