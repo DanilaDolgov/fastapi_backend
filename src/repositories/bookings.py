@@ -1,5 +1,5 @@
-from datetime import datetime
-
+from datetime import datetime, date
+from fastapi import HTTPException
 from sqlalchemy import select, func
 
 from src.models.facilities import FacilitiesOrm, FacilitiesRoomsOrm
@@ -9,7 +9,7 @@ from src.models.users import UsersOrm
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
 from src.repositories.mapper.mapper import BookingDataMapper
-from src.schemas.bookings import Booking
+from src.schemas.bookings import Booking, BookingAdd
 
 
 class BookingsRepository(BaseRepository):
@@ -69,3 +69,34 @@ class BookingsRepository(BaseRepository):
         ]
 
         return bookings
+
+    async def add_booking(self, model: BookingAdd):
+        stmt = (
+                select(RoomsOrm)
+                .join(
+                    BookingsOrm,
+                    (BookingsOrm.room_id == RoomsOrm.id)
+                    & (BookingsOrm.date_to >= model.date_from)
+                    & (BookingsOrm.date_from <= model.date_to),
+                    isouter=True
+                )
+                .where(RoomsOrm.id == model.room_id)
+                .group_by(RoomsOrm.id, RoomsOrm.quantity)
+                .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
+            )
+        result = await self.session.execute(stmt)
+        rooms = result.scalars().all()
+        from src.dependencies.dependencies import get_db_manager
+        if rooms:
+            async with get_db_manager() as db:
+                booking = await db.booking.add(model)
+                await db.commit()
+                return  booking
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Нет свободных номеров на выбранные даты"
+            )
+
+

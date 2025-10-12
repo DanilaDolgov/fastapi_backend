@@ -15,7 +15,7 @@ async def test_booking_crud(db):
     assert await db.booking.get_in_params(id=booking.id)
 
     booking.room_id = (await db.rooms.get_all())[1].id
-    await db.booking.update(booking)
+    await db.booking.update(booking, id=booking.id)
     booking = (await db.booking.get_in_params(id=booking.id))[0]
     assert room_id != booking.room_id
     assert booking.room_id == (await db.rooms.get_all())[1].id

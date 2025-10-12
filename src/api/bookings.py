@@ -1,3 +1,5 @@
+from typing import Dict
+
 from fastapi import APIRouter
 
 from src.schemas.bookings import BookingAdd, Booking, BookingRequest
@@ -11,9 +13,7 @@ async def create_booking(db: DBDep, data_booking: BookingRequest, user_id: UserI
     if user_id:
         room = await db.rooms.get_one_or_none(id=data_booking.room_id)
         _res = BookingAdd(user_id=user_id, **data_booking.model_dump(), price=room.price)
-        booking = await db.booking.add(_res)
-        await db.commit()
-
+        booking = await db.booking.add_booking(_res)
         return {'Status': 'Ok', 'data': booking}
 
 @booking_router.get("")

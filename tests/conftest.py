@@ -87,21 +87,7 @@ async def facility(ac, setup_database):
 #     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
 
-# @router.post(path='/login')
-# async def login_user(db: DBDep,
-#         data: UserRequestAdd,
-#         response: Response
-# ):
-#     user = await db.user.get_user_with_hashed_password(email=data.email)
-#     if not user:
-#         raise HTTPException(status_code=401, detail="User with this email not registration!")
-#     if not AuthService().verify_password(data.password, user.hash_password):
-#         raise HTTPException(status_code=401, detail="Password is not correct!")
-#     access_token =  AuthService().create_access_token({"user_id": user.id})
-#     response.set_cookie("access_token", access_token)
-#     return {'access_token': access_token}
-
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 async def authenticated_ac(create_user, ac, setup_database):
     response = await ac.post(url="/auth/login",
                   json={
@@ -110,6 +96,4 @@ async def authenticated_ac(create_user, ac, setup_database):
                   })
 
     assert "access_token=" in response.headers.get("set-cookie")
-    access_token = response.headers.get("set-cookie").split(";")[0].split("=")[1]
-    ac.cookies.set("access_token", access_token)
     yield ac

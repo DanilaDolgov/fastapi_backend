@@ -33,8 +33,6 @@ async def test_create_facilities(ac):
 
 async def test_get_facilities(ac):
     response = await ac.get("/facilities")
-    print(response.cookies)
-    print(response.headers)
 
     assert response.status_code == 200
     print(response.json())

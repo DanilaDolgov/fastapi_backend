@@ -4,3 +4,4 @@ venv
 .env
 .idea
 *minio_data
+*.env_test
