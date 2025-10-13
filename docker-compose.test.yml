@@ -8,13 +8,3 @@ services:
       - .env_test
     ports:
       - "${POSTGRES_PORT}:5432"
-
-  minio:
-    container_name: minio
-    image: minio/minio:latest
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    env_file:
-      - .env_test
-    command: [ "server", "--console-address", ":9001", "/data" ]

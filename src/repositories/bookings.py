@@ -76,8 +76,8 @@ class BookingsRepository(BaseRepository):
                 .join(
                     BookingsOrm,
                     (BookingsOrm.room_id == RoomsOrm.id)
-                    & (BookingsOrm.date_to >= model.date_from)
-                    & (BookingsOrm.date_from <= model.date_to),
+                    & (BookingsOrm.date_to > model.date_from)
+                    & (BookingsOrm.date_from < model.date_to),
                     isouter=True
                 )
                 .where(RoomsOrm.id == model.room_id)
@@ -86,13 +86,9 @@ class BookingsRepository(BaseRepository):
             )
         result = await self.session.execute(stmt)
         rooms = result.scalars().all()
-        from src.dependencies.dependencies import get_db_manager
         if rooms:
-            async with get_db_manager() as db:
-                booking = await db.booking.add(model)
-                await db.commit()
-                return  booking
-
+            booking = await self.add(model)
+            return  booking
         else:
             raise HTTPException(
                 status_code=400,

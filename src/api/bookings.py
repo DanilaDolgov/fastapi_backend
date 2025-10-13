@@ -14,6 +14,7 @@ async def create_booking(db: DBDep, data_booking: BookingRequest, user_id: UserI
         room = await db.rooms.get_one_or_none(id=data_booking.room_id)
         _res = BookingAdd(user_id=user_id, **data_booking.model_dump(), price=room.price)
         booking = await db.booking.add_booking(_res)
+        await db.commit()
         return {'Status': 'Ok', 'data': booking}
 
 @booking_router.get("")
