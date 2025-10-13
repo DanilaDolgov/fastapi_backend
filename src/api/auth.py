@@ -1,7 +1,6 @@
-from http.client import HTTPException
-
 from fastapi import APIRouter, HTTPException, Response
 from passlib.context import CryptContext
+from sqlalchemy.exc import IntegrityError
 
 from src.dependencies.dependencies import UserIdDep, DBDep
 from src.services.auth import AuthService
@@ -37,8 +36,12 @@ async def register_user(
 ):
     hashed_password = AuthService().hash_password(data.password)
     new_user_data = UserAdd(email=data.email, hash_password=hashed_password)
-    await db.user.add(new_user_data)
-    await db.commit()
+
+    try:
+        await db.user.add(new_user_data)
+        await db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
 
     return {'Status': 'Ok'}
 
