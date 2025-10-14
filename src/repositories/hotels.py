@@ -20,15 +20,11 @@ class HotelsRepository(BaseRepository):
                 func.lower(HotelsOrm.location).like(f"%{location.strip().lower()}%")
             )
         if title:
-            query = query.filter(
-                func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%")
-            )
+            query = query.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
         query = query.limit(limit).offset(offset)
         result = await self.session.execute(query)
 
-        return [
-            self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()
-        ]
+        return [self.mapper.map_to_domain_entity(hotel) for hotel in result.scalars().all()]
 
     async def get_filtered_by_time(
         self, location, title, limit, offset, date_from: date, date_to: date, **kwargs
@@ -43,18 +39,12 @@ class HotelsRepository(BaseRepository):
                 isouter=True,
             )
             .group_by(RoomsOrm.id, RoomsOrm.quantity)
-            .having(
-                RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0
-            )
+            .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
         )
         if location:
-            stmt = stmt.filter(
-                func.lower(HotelsOrm.location).like(f"%{location.strip().lower()}%")
-            )
+            stmt = stmt.filter(func.lower(HotelsOrm.location).like(f"%{location.strip().lower()}%"))
         if title:
-            stmt = stmt.filter(
-                func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%")
-            )
+            stmt = stmt.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
         print(stmt)
         stmt = stmt.limit(limit).offset(offset)
         return await self.get_in_params(HotelsOrm.id.in_(stmt.distinct()))

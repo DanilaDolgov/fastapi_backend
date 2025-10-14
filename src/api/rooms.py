@@ -26,16 +26,8 @@ def unique_diff_room_facilities(room_id: int, list1: list, list2: list):
             - List of RoomsFacilitiesAdd objects to delete.
     """
     return (
-        [
-            RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x)
-            for x in list1
-            if x not in list2
-        ],
-        [
-            RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x)
-            for x in list2
-            if x not in list1
-        ],
+        [RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x) for x in list1 if x not in list2],
+        [RoomsFacilitiesAdd(rooms_id=room_id, facilities_id=x) for x in list2 if x not in list1],
     )
 
 
@@ -86,8 +78,7 @@ async def create_rooms(
     _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
     room = await db.rooms.add(_res)
     rooms_facilities = [
-        RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r)
-        for r in data_room.facilities_ids
+        RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r) for r in data_room.facilities_ids
     ]
     await db.rooms_facilities.add_bulk(rooms_facilities)
     await db.commit()
@@ -194,9 +185,7 @@ async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int):
 
 
 @router_rooms.put("/{hotel_id}/{room_id}")
-async def update_room(
-    db: DBDep, hotel_id: int, room_id: int, data_room: RoomAddRequest
-):
+async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomAddRequest):
     """
     Fully update room information and its facilities.
 
@@ -218,9 +207,7 @@ async def update_room(
         if data_room.facilities_ids and 0 not in data_room.facilities_ids:
             facilities_ids = [
                 facility_id.facilities_id
-                for facility_id in await db.rooms_facilities.get_in_params(
-                    rooms_id=room_id
-                )
+                for facility_id in await db.rooms_facilities.get_in_params(rooms_id=room_id)
             ]
             del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(
                 room_id, facilities_ids, data_room.facilities_ids
@@ -232,17 +219,13 @@ async def update_room(
         await db.commit()
     except IntegrityError:
         await db.session.rollback()
-        raise HTTPException(
-            status_code=400, detail="One of the facilities_id does not exist"
-        )
+        raise HTTPException(status_code=400, detail="One of the facilities_id does not exist")
 
     return {"Status": "Ok"}
 
 
 @router_rooms.patch("/{hotel_id}/{room_id}")
-async def update_patch_room(
-    db: DBDep, hotel_id: int, room_id: int, data_room: RoomPatchRequest
-):
+async def update_patch_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomPatchRequest):
     """
     Partially update room data and its facilities.
 

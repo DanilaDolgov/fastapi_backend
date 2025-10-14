@@ -41,16 +41,12 @@ class S3Client:
                 ContentType=content_type,
                 ContentDisposition="inline",
             )
-            print(
-                f"Файл {file.filename} успешно загружен в {self.bucket_name}/{s3_key}"
-            )
+            print(f"Файл {file.filename} успешно загружен в {self.bucket_name}/{s3_key}")
 
     async def delete_files(self, prefix: str) -> dict:
         """Удаление всех файлов по префиксу (internal endpoint)"""
         async with self._get_client(self.endpoint_internal) as client:
-            response = await client.list_objects_v2(
-                Bucket=self.bucket_name, Prefix=prefix
-            )
+            response = await client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
             if "Contents" not in response:
                 return {}
 
@@ -63,16 +59,12 @@ class S3Client:
     async def list_keys(self, prefix: str) -> list[str]:
         """Получение списка ключей по префиксу (internal endpoint)"""
         async with self._get_client(self.endpoint_internal) as client:
-            response = await client.list_objects_v2(
-                Bucket=self.bucket_name, Prefix=prefix
-            )
+            response = await client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
             if "Contents" not in response:
                 return []
             return [obj["Key"] for obj in response["Contents"]]
 
-    async def generate_presigned_url(
-        self, key: str, expires_in: int = 365 * 24 * 3600
-    ) -> str:
+    async def generate_presigned_url(self, key: str, expires_in: int = 365 * 24 * 3600) -> str:
         """Генерация presigned URL для браузера"""
         async with self._get_client(self.endpoint_public) as client:
             url = await client.generate_presigned_url(

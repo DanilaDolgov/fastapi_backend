@@ -15,9 +15,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 async def login_user(db: DBDep, data: UserRequestAdd, response: Response):
     user = await db.user.get_user_with_hashed_password(email=data.email)
     if not user:
-        raise HTTPException(
-            status_code=401, detail="User with this email not registration!"
-        )
+        raise HTTPException(status_code=401, detail="User with this email not registration!")
     if not AuthService().verify_password(data.password, user.hash_password):
         raise HTTPException(status_code=401, detail="Password is not correct!")
     access_token = AuthService().create_access_token({"user_id": user.id})
@@ -34,9 +32,7 @@ async def register_user(db: DBDep, data: UserRequestAdd):
         await db.user.add(new_user_data)
         await db.commit()
     except IntegrityError:
-        raise HTTPException(
-            status_code=400, detail="User with this email already exists"
-        )
+        raise HTTPException(status_code=400, detail="User with this email already exists")
 
     return {"Status": "Ok"}
 

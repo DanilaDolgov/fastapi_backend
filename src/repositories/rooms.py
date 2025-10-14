@@ -26,9 +26,7 @@ class RoomsRepository(BaseRepository):
             )
             .where(RoomsOrm.hotel_id == hotel_id)
             .group_by(RoomsOrm.id, RoomsOrm.quantity)
-            .having(
-                RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0
-            )
+            .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
         )
         result = await self.session.execute(stmt)
         if result:
@@ -39,11 +37,7 @@ class RoomsRepository(BaseRepository):
         return None
 
     async def get_one_or_none(self, **filter_by):
-        query = (
-            select(RoomsOrm)
-            .options(joinedload(RoomsOrm.facilities))
-            .filter_by(**filter_by)
-        )
+        query = select(RoomsOrm).options(joinedload(RoomsOrm.facilities)).filter_by(**filter_by)
         result = await self.session.execute(query)
         model = result.unique().scalars().one_or_none()
         if model:

@@ -39,9 +39,7 @@ def redis_cache(ttl: int = 60):
                 for attempt in range(1, MAX_RETRIES + 1):
                     try:
                         result_schema = [result.model_dump() for result in results]
-                        await redis_manager.set(
-                            key, json.dumps(result_schema), expire=ttl
-                        )
+                        await redis_manager.set(key, json.dumps(result_schema), expire=ttl)
                         print(f"✅ Retry {attempt}: cached successfully")
                         break
                     except Exception as retry_e:

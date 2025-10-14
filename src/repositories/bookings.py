@@ -82,9 +82,7 @@ class BookingsRepository(BaseRepository):
             )
             .where(RoomsOrm.id == model.room_id)
             .group_by(RoomsOrm.id, RoomsOrm.quantity)
-            .having(
-                RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0
-            )
+            .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
         )
         result = await self.session.execute(stmt)
         rooms = result.scalars().all()
@@ -92,6 +90,4 @@ class BookingsRepository(BaseRepository):
             booking = await self.add(model)
             return booking
         else:
-            raise HTTPException(
-                status_code=400, detail="Нет свободных номеров на выбранные даты"
-            )
+            raise HTTPException(status_code=400, detail="Нет свободных номеров на выбранные даты")
