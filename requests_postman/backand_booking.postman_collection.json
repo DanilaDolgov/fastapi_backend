@@ -1,0 +1,70 @@
+{
+	"info": {
+		"_postman_id": "c12a587c-7573-47e0-a851-e007aa4eecaa",
+		"name": "backand_booking",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39167991"
+	},
+	"item": [
+		{
+			"name": "rooms",
+			"item": [
+				{
+					"name": "add_rooms",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "data_room_str",
+									"value": "{\n  \"title\": \"Deluxe Suite\",\n  \"description\": \"Номер с видом на море\",\n  \"price\": 12000,\n  \"quantity\": 5,\n  \"facilities_ids\": [4,5,6]\n}\n",
+									"type": "text"
+								},
+								{
+									"key": "files",
+									"type": "file",
+									"src": [
+										"/Users/danila/Downloads/ChatGPT Image 27 июл. 2025 г., 11_04_53 (3) (2).png",
+										"/Users/danila/Downloads/5.png",
+										"/Users/danila/Downloads/screenshot_20250711_154039.png"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/rooms/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"rooms",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_room",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
