@@ -4,13 +4,7 @@ from celery.schedules import crontab
 from src.config import settings
 
 
-celery_instance = Celery(
-    "tasks",
-    broker=settings.DB_REDIS,
-    include=[
-        "src.tasks.tasks"
-    ]
-)
+celery_instance = Celery("tasks", broker=settings.DB_REDIS, include=["src.tasks.tasks"])
 
 celery_instance.conf.beat_schedule = {
     "send_mail_checkin": {

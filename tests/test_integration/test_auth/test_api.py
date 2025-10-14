@@ -1,11 +1,14 @@
 import pytest
 
-@pytest.mark.parametrize("email, password", [
-    ("test2025@test.com", "test12345"),
-    ("test2025@test.com", "test12345")
-])
+
+@pytest.mark.parametrize(
+    "email, password",
+    [("test2025@test.com", "test12345"), ("test2025@test.com", "test12345")],
+)
 async def test_register_user(email, password, ac, db):
-    res_register = await ac.post("/auth/register", json={"email": email, "password": password})
+    res_register = await ac.post(
+        "/auth/register", json={"email": email, "password": password}
+    )
 
     print(res_register.status_code)
     if res_register.status_code == 200:
@@ -16,13 +19,19 @@ async def test_register_user(email, password, ac, db):
         assert res_register.status_code == 400
         assert len(await db.user.get_in_params(email=email)) == 1
 
-@pytest.mark.parametrize("email, password", [
-    ("test2025@test.com", "test12345"),
-    ("test2025@testS.ru", "test12345"),
-    ("test2025@test.com", "54321test"),
-])
+
+@pytest.mark.parametrize(
+    "email, password",
+    [
+        ("test2025@test.com", "test12345"),
+        ("test2025@testS.ru", "test12345"),
+        ("test2025@test.com", "54321test"),
+    ],
+)
 async def test_login_user(email, password, ac, db):
-    res_login = await ac.post("/auth/login", json={"email": email, "password": password})
+    res_login = await ac.post(
+        "/auth/login", json={"email": email, "password": password}
+    )
 
     print(res_login.status_code)
     if res_login.status_code == 200:
@@ -32,9 +41,8 @@ async def test_login_user(email, password, ac, db):
     else:
         assert res_login.status_code == 401
 
-@pytest.mark.parametrize("email", [
-    ("test2025@test.com",)
-])
+
+@pytest.mark.parametrize("email", [("test2025@test.com",)])
 async def test_me_user(email, ac, db):
     res_me = await ac.get("/auth/me")
     user = await db.user.get_one(email=email[0])

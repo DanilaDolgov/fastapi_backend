@@ -72,27 +72,26 @@ class BookingsRepository(BaseRepository):
 
     async def add_booking(self, model: BookingAdd):
         stmt = (
-                select(RoomsOrm)
-                .join(
-                    BookingsOrm,
-                    (BookingsOrm.room_id == RoomsOrm.id)
-                    & (BookingsOrm.date_to > model.date_from)
-                    & (BookingsOrm.date_from < model.date_to),
-                    isouter=True
-                )
-                .where(RoomsOrm.id == model.room_id)
-                .group_by(RoomsOrm.id, RoomsOrm.quantity)
-                .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
+            select(RoomsOrm)
+            .join(
+                BookingsOrm,
+                (BookingsOrm.room_id == RoomsOrm.id)
+                & (BookingsOrm.date_to > model.date_from)
+                & (BookingsOrm.date_from < model.date_to),
+                isouter=True,
             )
+            .where(RoomsOrm.id == model.room_id)
+            .group_by(RoomsOrm.id, RoomsOrm.quantity)
+            .having(
+                RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0
+            )
+        )
         result = await self.session.execute(stmt)
         rooms = result.scalars().all()
         if rooms:
             booking = await self.add(model)
-            return  booking
+            return booking
         else:
             raise HTTPException(
-                status_code=400,
-                detail="Нет свободных номеров на выбранные даты"
+                status_code=400, detail="Нет свободных номеров на выбранные даты"
             )
-
-

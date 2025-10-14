@@ -19,5 +19,3 @@ class UsersRepository(BaseRepository):
             return UserHashPassword.model_validate(model, from_attributes=True)
         else:
             return None
-
-

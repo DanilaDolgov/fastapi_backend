@@ -21,12 +21,14 @@ env = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
+
 # -----------------------------
 # Функция рендера шаблона
 # -----------------------------
 def render_checkin_email(data: dict) -> str:
     template = env.get_template("checkin_email.html")
     return template.render(**data)
+
 
 # -----------------------------
 # Функция отправки писем
@@ -36,10 +38,7 @@ async def send_checkin_emails(bookings):
     for booking in bookings:
         html_body = render_checkin_email(booking)
         subject = f"Ваше бронирование — {booking['room_title']}"
-        print(f'---------------{booking["email"]}')
+        print(f"---------------{booking['email']}")
         sender.send_email(
-            to_email=booking["email"],
-            subject=subject,
-            body=html_body,
-            html=True
+            to_email=booking["email"], subject=subject, body=html_body, html=True
         )

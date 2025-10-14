@@ -19,10 +19,7 @@ async def test_create_facilities(ac):
     # room_id = response_room_id.json()['rooms'][0]["room_id"]
     # assert room_id
 
-    response = await ac.post(
-                    url="/facilities",
-                    json={"title": "WiFi"}
-    )
+    response = await ac.post(url="/facilities", json={"title": "WiFi"})
     assert response.status_code == 200
     print(response.json())
     assert isinstance(response.json(), dict)
@@ -33,5 +30,5 @@ async def test_get_facilities(ac):
 
     assert response.status_code == 200
     print(response.json())
-    assert response.json()[0]['title']
+    assert response.json()[0]["title"]
     assert isinstance(response.json(), list)

@@ -10,7 +10,8 @@ if typing.TYPE_CHECKING:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     INDEX_PATH = os.path.join(BASE_DIR, "index.html")
 
-many_router = APIRouter(prefix='/many', tags=["Курс доллара"])
+many_router = APIRouter(prefix="/many", tags=["Курс доллара"])
+
 
 @many_router.get("/index")
 async def index():
@@ -22,6 +23,7 @@ def get_usd_rate():
     resp = requests.get(url, timeout=5)
     data = resp.json()
     return data["Valute"]["USD"]["Value"]
+
 
 @many_router.websocket("/ws/usd")
 async def ws_usd(websocket: WebSocket):

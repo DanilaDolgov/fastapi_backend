@@ -17,7 +17,6 @@ async def get_all_facilities(db: DBDep) -> List:
     facility = await db.facilities.get_all()
     return facility
 
-
     # facilities_from_cache = await redis_manager.get("facilities")
     # print(facilities_from_cache)
     # if facilities_from_cache:
@@ -30,11 +29,9 @@ async def get_all_facilities(db: DBDep) -> List:
 
 
 @router_facilities.post("")
-async def add_facilities(db:DBDep, data_facilities: FacilitiesRequest) -> dict:
+async def add_facilities(db: DBDep, data_facilities: FacilitiesRequest) -> dict:
     facilities = await db.facilities.add(data_facilities)
     await db.commit()
     # test_task.delay("привет celery")
 
-    return {'Status': 'Ok', 'facilities': facilities}
-
-
+    return {"Status": "Ok", "facilities": facilities}

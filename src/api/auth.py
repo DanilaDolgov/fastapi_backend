@@ -6,34 +6,27 @@ from src.dependencies.dependencies import UserIdDep, DBDep
 from src.services.auth import AuthService
 from src.schemas.users import UserRequestAdd, UserAdd
 
-router = APIRouter(prefix='/auth', tags=["Авторизация и Аутентификация"])
+router = APIRouter(prefix="/auth", tags=["Авторизация и Аутентификация"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-
-
-@router.post(path='/login')
-async def login_user(db: DBDep,
-        data: UserRequestAdd,
-        response: Response
-):
+@router.post(path="/login")
+async def login_user(db: DBDep, data: UserRequestAdd, response: Response):
     user = await db.user.get_user_with_hashed_password(email=data.email)
     if not user:
-        raise HTTPException(status_code=401, detail="User with this email not registration!")
+        raise HTTPException(
+            status_code=401, detail="User with this email not registration!"
+        )
     if not AuthService().verify_password(data.password, user.hash_password):
         raise HTTPException(status_code=401, detail="Password is not correct!")
-    access_token =  AuthService().create_access_token({"user_id": user.id})
+    access_token = AuthService().create_access_token({"user_id": user.id})
     response.set_cookie("access_token", access_token)
-    return {'access_token': access_token}
+    return {"access_token": access_token}
 
 
-
-@router.post(path='/register')
-async def register_user(
-        db: DBDep,
-        data: UserRequestAdd
-):
+@router.post(path="/register")
+async def register_user(db: DBDep, data: UserRequestAdd):
     hashed_password = AuthService().hash_password(data.password)
     new_user_data = UserAdd(email=data.email, hash_password=hashed_password)
 
@@ -41,16 +34,15 @@ async def register_user(
         await db.user.add(new_user_data)
         await db.commit()
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        raise HTTPException(
+            status_code=400, detail="User with this email already exists"
+        )
 
-    return {'Status': 'Ok'}
+    return {"Status": "Ok"}
 
 
 @router.get("/me")
-async def get_me(
-db: DBDep,
-user_id: UserIdDep
-):
+async def get_me(db: DBDep, user_id: UserIdDep):
     user = await db.user.get_one_or_none(id=user_id)
     return user
 
@@ -58,4 +50,4 @@ user_id: UserIdDep
 @router.post("/logout")
 async def logout_user(response: Response):
     response.delete_cookie("access_token")
-    return {'Status': 'Ok'}
+    return {"Status": "Ok"}

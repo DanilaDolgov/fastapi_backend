@@ -3,6 +3,7 @@ from sqlalchemy import String, ForeignKey
 import typing
 
 from src.database import Base
+
 if typing.TYPE_CHECKING:
     from src.models import RoomsOrm
 

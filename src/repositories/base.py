@@ -16,7 +16,9 @@ class BaseRepository:
     async def get_all(self, *args, **kwargs):
         query = select(self.model)
         result = await self.session.execute(query)
-        return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
+        return [
+            self.mapper.map_to_domain_entity(model) for model in result.scalars().all()
+        ]
 
     async def get_one(self, **kwargs):
         query = select(self.model).filter_by(**kwargs)
@@ -36,12 +38,13 @@ class BaseRepository:
         return None
 
     async def get_in_params(self, *args, **filter_by):
-        query = (select(self.model)
-                .filter(*args)
-                .filter_by(**filter_by))
+        query = select(self.model).filter(*args).filter_by(**filter_by)
         result = await self.session.execute(query)
         if result:
-            return [self.mapper.map_to_domain_entity(model) for model in result.scalars().all()]
+            return [
+                self.mapper.map_to_domain_entity(model)
+                for model in result.scalars().all()
+            ]
         return None
 
     async def add(self, data: BaseModel):
@@ -74,14 +77,17 @@ class BaseRepository:
         print(delete_stm.compile(compile_kwargs={"literal_binds": True}))
         await self.session.execute(delete_stm)
 
-    async def update(self, data: BaseModel, exclude_unset: bool = False, **filter_by) -> None :
+    async def update(
+        self, data: BaseModel, exclude_unset: bool = False, **filter_by
+    ) -> None:
         update_stm = (
             update(self.model)
             .filter_by(**filter_by)
-            .values(**data.model_dump(exclude_unset=exclude_unset)))
+            .values(**data.model_dump(exclude_unset=exclude_unset))
+        )
 
         await self.session.execute(update_stm)
 
     async def delete(self, **filter_by) -> None:
-        delete_stm =delete(self.model).filter_by(**filter_by)
+        delete_stm = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_stm)

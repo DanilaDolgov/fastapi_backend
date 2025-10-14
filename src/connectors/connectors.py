@@ -3,7 +3,9 @@ from src.config import settings
 
 
 class RedisManager:
-    def __init__(self, host: str = settings.REDIS_HOST, port: int = settings.REDIS_PORT):
+    def __init__(
+        self, host: str = settings.REDIS_HOST, port: int = settings.REDIS_PORT
+    ):
         self.host = host
         self.port = port
         self._client: redis.Redis | None = None

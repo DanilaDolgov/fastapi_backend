@@ -5,13 +5,16 @@ class UserRequestAdd(BaseModel):
     email: EmailStr
     password: str
 
+
 class UserAdd(BaseModel):
     email: EmailStr
     hash_password: str
 
+
 class User(BaseModel):
     id: int
     email: EmailStr
+
 
 class UserHashPassword(User):
     hash_password: str

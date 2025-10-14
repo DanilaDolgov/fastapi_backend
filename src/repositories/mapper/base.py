@@ -1,6 +1,3 @@
-
-
-
 class DataMapper:
     db_model = None
     schema = None

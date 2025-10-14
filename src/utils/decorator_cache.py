@@ -5,8 +5,9 @@ import asyncio
 # from src.connectors.connectors import RedisManager
 from src.utils.redis_setting import redis_manager
 
-MAX_RETRIES=2
+MAX_RETRIES = 2
 RETRY_DELAY = 0.5
+
 
 def redis_cache(ttl: int = 60):
     def decorator(func):
@@ -38,7 +39,9 @@ def redis_cache(ttl: int = 60):
                 for attempt in range(1, MAX_RETRIES + 1):
                     try:
                         result_schema = [result.model_dump() for result in results]
-                        await redis_manager.set(key, json.dumps(result_schema), expire=ttl)
+                        await redis_manager.set(
+                            key, json.dumps(result_schema), expire=ttl
+                        )
                         print(f"✅ Retry {attempt}: cached successfully")
                         break
                     except Exception as retry_e:
@@ -52,4 +55,5 @@ def redis_cache(ttl: int = 60):
             return results
 
         return wrapper
+
     return decorator

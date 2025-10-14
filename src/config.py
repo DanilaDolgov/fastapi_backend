@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 
 
-
 dotenv_path = os.path.join(os.path.dirname(__file__), "../.env")
 load_dotenv(dotenv_path)
 
@@ -47,5 +46,6 @@ class Settings(BaseSettings):
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
     model_config = SettingsConfigDict(env_file="../.env")
+
 
 settings = Settings()

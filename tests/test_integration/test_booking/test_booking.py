@@ -2,14 +2,17 @@ from datetime import date
 
 from src.schemas.bookings import BookingAdd
 
+
 async def test_booking_crud(db):
     user_id = (await db.user.get_all())[0].id
     room_id = (await db.rooms.get_all())[0].id
-    data = BookingAdd(user_id=user_id,
-                      room_id=room_id,
-                      date_from=date(year=2025, month=10, day=13),
-                      date_to=date(year=2025, month=10, day=15),
-                      price=4500)
+    data = BookingAdd(
+        user_id=user_id,
+        room_id=room_id,
+        date_from=date(year=2025, month=10, day=13),
+        date_to=date(year=2025, month=10, day=15),
+        price=4500,
+    )
     booking = await db.booking.add(data)
 
     assert await db.booking.get_in_params(id=booking.id)

@@ -7,25 +7,24 @@ from src.schemas.hotels import HotelPATCH, HotelAdd
 router_hotels = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
-
-
-
 @router_hotels.get("")
 async def get_hotels(
-        pagination: Pagination,
-        db: DBDep,
-        date_to: date,
-        date_from: date,
-        title: str | None = Query(None, description="Название отеля"),
-        location: str | None = Query(None, description="Адрес отеля"),
+    pagination: Pagination,
+    db: DBDep,
+    date_to: date,
+    date_from: date,
+    title: str | None = Query(None, description="Название отеля"),
+    location: str | None = Query(None, description="Адрес отеля"),
 ):
     per_page = pagination.per_page or 5
-    return await db.hotels.get_filtered_by_time(date_from=date_from,
-                                                date_to=date_to,
-                                                title=title,
-                                                location=location,
-                                                limit=per_page,
-                                                offset=per_page * (pagination.page - 1))
+    return await db.hotels.get_filtered_by_time(
+        date_from=date_from,
+        date_to=date_to,
+        title=title,
+        location=location,
+        limit=per_page,
+        offset=per_page * (pagination.page - 1),
+    )
 
 
 @router_hotels.delete("/{hotel_id}")
@@ -33,31 +32,32 @@ async def delete_hotels(db: DBDep, hotel_id: int):
     await db.hotels.delete(id=hotel_id)
     await db.commit()
 
-    return {'Status': 'Ok'}
+    return {"Status": "Ok"}
+
 
 @router_hotels.get("/{hotel_id}")
 async def get_hotel_one(db: DBDep, hotel_id: int):
     hotel = await db.hotels.get_one_or_none(id=hotel_id)
 
-    return {'Hotel': hotel}
-
+    return {"Hotel": hotel}
 
 
 @router_hotels.post("")
-async def create_hotels(db: DBDep, data_hotel: HotelAdd = Body(openapi_examples={
-    "1": {
-        "summary": "Sochi",
-        "value":
-            {
-                "title": "Sochi",
-                "location": "ул. Лазурная дом 1"
+async def create_hotels(
+    db: DBDep,
+    data_hotel: HotelAdd = Body(
+        openapi_examples={
+            "1": {
+                "summary": "Sochi",
+                "value": {"title": "Sochi", "location": "ул. Лазурная дом 1"},
             }
-    }
-})):
+        }
+    ),
+):
     hotel = await db.hotels.add(data_hotel)
     await db.commit()
 
-    return {'Status': 'Ok', 'data': hotel}
+    return {"Status": "Ok", "data": hotel}
 
 
 @router_hotels.put("/{hotel_id}")

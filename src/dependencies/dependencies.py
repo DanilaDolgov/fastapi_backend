@@ -24,16 +24,18 @@ def get_token(request: Request):
         raise HTTPException(status_code=401, detail="Not access token.")
     return token
 
+
 def get_current_user_id(token: str = Depends(get_token)):
     data = AuthService().encode_token(token)
     return data["user_id"]
 
 
-
 UserIdDep = Annotated[int, Depends(get_current_user_id)]
+
 
 def get_db_manager():
     return DBManager(session_factory=async_session_maker)
+
 
 async def get_db():
     async with get_db_manager() as db:
@@ -41,6 +43,7 @@ async def get_db():
 
 
 DBDep = Annotated[DBManager, Depends(get_db)]
+
 
 def get_client():
     return S3Client()

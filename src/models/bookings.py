@@ -19,10 +19,12 @@ class BookingsOrm(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), onupdate=func.now(), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        server_default=func.now(),
+        nullable=False,
     )
 
     @hybrid_property
     def total_coast(self) -> int:
         return self.price * (self.date_to - self.date_from).days
-

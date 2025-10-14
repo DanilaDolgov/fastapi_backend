@@ -8,10 +8,8 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 
 
-
 import sys
 from pathlib import Path
-
 
 
 sys.path.append(str(Path(__file__).parent.parent))
@@ -50,6 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
