@@ -1,14 +1,11 @@
-import json
-from typing import List, Dict
-
+from typing import List
 from fastapi import APIRouter
 from fastapi_cache.decorator import cache
-from pydantic import BaseModel
 
 from src.dependencies.dependencies import DBDep
 from src.schemas.facilities import FacilitiesRequest
-from src.utils.decorator_cache import redis_cache
-from src.tasks.tasks import test_task
+# from src.utils.decorator_cache import redis_cache
+# from src.tasks.tasks import test_task
 
 router_facilities = APIRouter(prefix="/facilities", tags=["Удобства"])
 

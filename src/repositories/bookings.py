@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import select, func
 
@@ -9,7 +9,7 @@ from src.models.users import UsersOrm
 from src.repositories.base import BaseRepository
 from src.models.bookings import BookingsOrm
 from src.repositories.mapper.mapper import BookingDataMapper
-from src.schemas.bookings import Booking, BookingAdd
+from src.schemas.bookings import BookingAdd
 
 
 class BookingsRepository(BaseRepository):

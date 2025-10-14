@@ -1,6 +1,3 @@
-from http.client import responses
-
-
 async def test_create_facilities(ac):
     # response_hotels_id = await ac.get("/hotels",
     #                                   params={

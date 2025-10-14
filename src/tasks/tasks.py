@@ -1,4 +1,3 @@
-from sqlalchemy.util import await_only
 import asyncio
 
 from src.database import async_session_maker_null_pool

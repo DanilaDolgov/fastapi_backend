@@ -6,7 +6,6 @@ from src.models.bookings import BookingsOrm
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
 from src.repositories.mapper.mapper import HotelDataMapper
-from src.schemas.hotels import Hotel
 from src.repositories.base import BaseRepository
 
 

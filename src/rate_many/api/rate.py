@@ -1,12 +1,16 @@
+import requests
+import asyncio
+import os
+import typing
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
-import requests, asyncio, os
+
+
+if typing.TYPE_CHECKING:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    INDEX_PATH = os.path.join(BASE_DIR, "index.html")
 
 many_router = APIRouter(prefix='/many', tags=["Курс доллара"])
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INDEX_PATH = os.path.join(BASE_DIR, "index.html")
-
 
 @many_router.get("/index")
 async def index():

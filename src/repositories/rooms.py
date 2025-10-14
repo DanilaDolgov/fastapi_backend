@@ -6,7 +6,7 @@ from src.models.bookings import BookingsOrm
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
 from src.repositories.mapper.mapper import RoomDataMapper
-from src.schemas.rooms import Room, RoomWithReal
+from src.schemas.rooms import RoomWithReal
 
 
 class RoomsRepository(BaseRepository):

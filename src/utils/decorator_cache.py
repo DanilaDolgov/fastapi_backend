@@ -1,5 +1,4 @@
 import functools
-import hashlib
 import json
 import asyncio
 
@@ -17,14 +16,14 @@ def redis_cache(ttl: int = 60):
             try:
                 cached_value = await redis_manager.get(key)
             except Exception as e:
-                print(f"⚠️ redis connection")
+                print(f"⚠️ redis connection {e}")
                 for attempt in range(1, MAX_RETRIES + 1):
                     try:
                         await redis_manager.connect()
                         cached_value = await redis_manager.get(key)
                         break
                     except Exception as e:
-                        print(f"⚠️ redis connection")
+                        print(f"⚠️ redis connection {e}")
             if cached_value is not None:
                 print(f"⚡ Cache hit: {func.__name__}({args}, {kwargs})")
                 await redis_manager.close()

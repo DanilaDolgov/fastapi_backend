@@ -1,8 +1,6 @@
-from typing import Dict
-
 from fastapi import APIRouter
 
-from src.schemas.bookings import BookingAdd, Booking, BookingRequest
+from src.schemas.bookings import BookingAdd, BookingRequest
 from src.dependencies.dependencies import UserIdDep, DBDep, Pagination, S3Dep
 
 booking_router = APIRouter(prefix="/booking", tags=["Бронирование"])
@@ -24,7 +22,7 @@ async def get_bookings(db: DBDep, pagination: Pagination):
                                     offset=per_page * (pagination.page - 1))
 
 @booking_router.get("/me")
-async def get_bookings(db: DBDep, user_id: UserIdDep):
+async def get_bookings_me(db: DBDep, user_id: UserIdDep):
     if user_id:
         return await db.booking.get_in_params(user_id=user_id)
 

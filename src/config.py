@@ -1,9 +1,8 @@
 from typing import Literal
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 import os
-from pydantic import EmailStr
+
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), "../.env")

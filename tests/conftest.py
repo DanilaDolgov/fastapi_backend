@@ -1,26 +1,30 @@
 import json
-from typing import Any, AsyncGenerator
+from typing import AsyncGenerator
 import pytest
 import os
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
-from httpx import AsyncClient, ASGITransport, Cookies
+# from fastapi_cache import FastAPICache
+# from fastapi_cache.backends.inmemory import InMemoryBackend
+from httpx import AsyncClient, ASGITransport
 from dotenv import load_dotenv
 from unittest import mock
 
+
+
+
 mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
+load_dotenv(".env_test")
+path_files = os.path.join(os.path.dirname(__file__), "test_data")
 
 from src.config import settings
 from src.database import Base, engine_null_pool, async_session_maker_null_pool
 from src.dependencies.dependencies import get_db
 from src.main import app
-from src.models import *
+from src.models import * # noqa F403
 from src.schemas.hotels import HotelAdd
 from src.schemas.rooms import RoomAdd
 from src.utils.db_manager import DBManager
 
-load_dotenv(".env_test")
-path_files = os.path.join(os.path.dirname(__file__), "test_data")
+
 
 
 
