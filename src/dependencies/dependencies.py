@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from fastapi import Query, Depends, Request, HTTPException
 
 from src.database import async_session_maker
+from src.exceptions import ObjectNotFoundException
 from src.services.auth import AuthService
 from src.services.s3 import S3Client
 from src.utils.db_manager import DBManager
@@ -50,3 +51,19 @@ def get_client():
 
 
 S3Dep = Annotated[S3Client, Depends(get_client)]
+
+async def get_room_or_404(db: DBDep, hotel_id: int, room_id: int):
+    try:
+        return await db.rooms.get_one(id=room_id, hotel_id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail="Room not found.")
+
+room_not_none = Annotated[ObjectNotFoundException, Depends(get_room_or_404)]
+
+async def get_hotel_or_404(db: DBDep, hotel_id: int):
+    try:
+        return await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail="Hotel not found.")
+
+hotel_not_none = Annotated[ObjectNotFoundException, Depends(get_hotel_or_404)]

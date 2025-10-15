@@ -1,8 +1,11 @@
 from operator import or_
-
+from sqlalchemy.exc import NoResultFound
 from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete, and_
+from sqlalchemy.exc import IntegrityError
 
+from src.exceptions import HotelNotFoundException, FacilitiesNotFoundException, ObjectNotFoundException, \
+    ObjectAlreadyExistsException
 from src.repositories.mapper.base import DataMapper
 
 
@@ -22,10 +25,11 @@ class BaseRepository:
         query = select(self.model).filter_by(**kwargs)
         result = await self.session.execute(query)
         print(query.compile(compile_kwargs={"literal_binds": True}))
-        model = result.scalars().one_or_none()
-        if model:
-            return self.mapper.map_to_domain_entity(model)
-        return None
+        try:
+            model = result.scalars().one()
+        except NoResultFound:
+            raise ObjectNotFoundException
+        return self.mapper.map_to_domain_entity(model)
 
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)
@@ -45,14 +49,22 @@ class BaseRepository:
     async def add(self, data: BaseModel):
         added_stm = insert(self.model).values(**data.model_dump()).returning(self.model)
         # print(added_stm.compile(compile_kwargs={"literal_binds": True}))
-        result = await self.session.execute(added_stm)
-        model = result.scalars().one()
-        return self.mapper.map_to_domain_entity(model)
+        try:
+            result = await self.session.execute(added_stm)
+            model = result.scalars().one()
+            return self.mapper.map_to_domain_entity(model)
+        except IntegrityError:
+            raise ObjectAlreadyExistsException
+
+
 
     async def add_bulk(self, data: list[BaseModel]):
         added_stm = insert(self.model).values([item.model_dump() for item in data])
         print(added_stm.compile(compile_kwargs={"literal_binds": True}))
-        await self.session.execute(added_stm)
+        try:
+            await self.session.execute(added_stm)
+        except IntegrityError:
+            raise FacilitiesNotFoundException
 
     async def delete_bulk(self, data: list[BaseModel]):
         rows = [item.model_dump() for item in data]

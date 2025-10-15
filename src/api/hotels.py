@@ -1,8 +1,10 @@
 from datetime import date
-from fastapi import Query, APIRouter, Body
+from fastapi import Query, APIRouter, Body, HTTPException
 
 from src.dependencies.dependencies import DBDep, Pagination
+from src.exceptions import NotCorrectDateException, ObjectNotFoundException
 from src.schemas.hotels import HotelPATCH, HotelAdd
+from src.dependencies.dependencies import hotel_not_none
 
 router_hotels = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -17,15 +19,17 @@ async def get_hotels(
     location: str | None = Query(None, description="Адрес отеля"),
 ):
     per_page = pagination.per_page or 5
-    return await db.hotels.get_filtered_by_time(
-        date_from=date_from,
-        date_to=date_to,
-        title=title,
-        location=location,
-        limit=per_page,
-        offset=per_page * (pagination.page - 1),
-    )
-
+    try:
+        return await db.hotels.get_filtered_by_time(
+            date_from=date_from,
+            date_to=date_to,
+            title=title,
+            location=location,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1),
+        )
+    except NotCorrectDateException as ex:
+        raise HTTPException(status_code=400, detail=ex.detail)
 
 @router_hotels.delete("/{hotel_id}")
 async def delete_hotels(db: DBDep, hotel_id: int):
@@ -36,10 +40,10 @@ async def delete_hotels(db: DBDep, hotel_id: int):
 
 
 @router_hotels.get("/{hotel_id}")
-async def get_hotel_one(db: DBDep, hotel_id: int):
-    hotel = await db.hotels.get_one_or_none(id=hotel_id)
-
-    return {"Hotel": hotel}
+async def get_hotel_one(db: DBDep, hotel_id: int, hnn: hotel_not_none):
+    if hnn:
+        hotel = await db.hotels.get_one(id=hotel_id)
+        return {"Hotel": hotel}
 
 
 @router_hotels.post("")

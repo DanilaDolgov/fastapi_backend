@@ -2,6 +2,7 @@ from datetime import date
 
 from sqlalchemy import select, func
 
+from src.exceptions import NotCorrectDateException
 from src.models.bookings import BookingsOrm
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
@@ -29,13 +30,15 @@ class HotelsRepository(BaseRepository):
     async def get_filtered_by_time(
         self, location, title, limit, offset, date_from: date, date_to: date, **kwargs
     ):
+        if date_to == date_from or date_to < date_from:
+            raise NotCorrectDateException
         stmt = (
             select(RoomsOrm.hotel_id)
             .join(
                 BookingsOrm,
                 (BookingsOrm.room_id == RoomsOrm.id)
-                & (BookingsOrm.date_to >= date_from)
-                & (BookingsOrm.date_from <= date_to),
+                & (BookingsOrm.date_to > date_from)
+                & (BookingsOrm.date_from < date_to),
                 isouter=True,
             )
             .group_by(RoomsOrm.id, RoomsOrm.quantity)
@@ -45,6 +48,5 @@ class HotelsRepository(BaseRepository):
             stmt = stmt.filter(func.lower(HotelsOrm.location).like(f"%{location.strip().lower()}%"))
         if title:
             stmt = stmt.filter(func.lower(HotelsOrm.title).like(f"%{title.strip().lower()}%"))
-        print(stmt)
         stmt = stmt.limit(limit).offset(offset)
         return await self.get_in_params(HotelsOrm.id.in_(stmt.distinct()))

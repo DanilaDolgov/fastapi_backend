@@ -29,6 +29,8 @@ class Room(RoomAdd):
 class RoomWithReal(Room):
     facilities: list[Facilities]
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class RoomPatchRequest(BaseModel):
     title: str | None = Field(None)

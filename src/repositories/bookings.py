@@ -2,6 +2,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import select, func
 
+from src.exceptions import AllRoomsAreBookedException, NotCorrectDateException
 from src.models.facilities import FacilitiesOrm, FacilitiesRoomsOrm
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
@@ -71,6 +72,8 @@ class BookingsRepository(BaseRepository):
         return bookings
 
     async def add_booking(self, model: BookingAdd):
+        if model.date_to == model.date_from or model.date_to < model.date_from:
+            raise NotCorrectDateException
         stmt = (
             select(RoomsOrm)
             .join(
@@ -89,5 +92,4 @@ class BookingsRepository(BaseRepository):
         if rooms:
             booking = await self.add(model)
             return booking
-        else:
-            raise HTTPException(status_code=400, detail="Нет свободных номеров на выбранные даты")
+        raise AllRoomsAreBookedException

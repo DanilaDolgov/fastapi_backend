@@ -1,12 +1,17 @@
 from datetime import date
-from sqlalchemy import select, func
+
+
+from pydantic_core._pydantic_core import ValidationError
+from sqlalchemy import select, func, delete
 from sqlalchemy.orm import joinedload
 
+from src.exceptions import HotelOrRoomsNotFoundException, NotCorrectDateException
 from src.models.bookings import BookingsOrm
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
 from src.repositories.mapper.mapper import RoomDataMapper
 from src.schemas.rooms import RoomWithReal
+from src.models.facilities import FacilitiesRoomsOrm
 
 
 class RoomsRepository(BaseRepository):
@@ -14,14 +19,16 @@ class RoomsRepository(BaseRepository):
     mapper = RoomDataMapper
 
     async def get_filtered_by_time(self, hotel_id, date_from: date, date_to: date):
+        if date_to == date_from or date_to < date_from:
+            raise NotCorrectDateException
         stmt = (
             select(RoomsOrm)
             .options(joinedload(self.model.facilities))
             .join(
                 BookingsOrm,
                 (BookingsOrm.room_id == RoomsOrm.id)
-                & (BookingsOrm.date_to >= date_from)
-                & (BookingsOrm.date_from <= date_to),
+                & (BookingsOrm.date_to > date_from)
+                & (BookingsOrm.date_from < date_to),
                 isouter=True,
             )
             .where(RoomsOrm.hotel_id == hotel_id)
@@ -29,17 +36,17 @@ class RoomsRepository(BaseRepository):
             .having(RoomsOrm.quantity - func.coalesce(func.count(BookingsOrm.id), 0) > 0)
         )
         result = await self.session.execute(stmt)
-        if result:
-            return [
-                RoomWithReal.model_validate(model, from_attributes=True)
-                for model in result.unique().scalars().all()
-            ]
-        return None
+        return [
+            self.mapper.map_to_domain_entity(model)
+            for model in result.unique().scalars().all()
+        ]
 
-    async def get_one_or_none(self, **filter_by):
-        query = select(RoomsOrm).options(joinedload(RoomsOrm.facilities)).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        model = result.unique().scalars().one_or_none()
-        if model:
-            return RoomWithReal.model_validate(model, from_attributes=True)
-        return None
+
+    async def delete_rooms(self, room_id, hotel_id):
+        delete_stmt_f = delete(FacilitiesRoomsOrm).filter_by(rooms_id=room_id)
+        await self.session.execute(delete_stmt_f)
+        delete_stmt_r = delete(RoomsOrm).filter_by(id=room_id, hotel_id=hotel_id)
+        await self.session.execute(delete_stmt_r)
+    
+
+

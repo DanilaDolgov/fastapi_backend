@@ -4,9 +4,12 @@ from fastapi import APIRouter, File, UploadFile, Query, Form, HTTPException
 from typing import List
 from sqlalchemy.exc import IntegrityError
 
-from src.dependencies.dependencies import DBDep, S3Dep
+from src.dependencies.dependencies import DBDep, S3Dep, hotel_not_none
+from src.exceptions import HotelNotFoundException, FacilitiesNotFoundException, \
+    NotCorrectDateException, ObjectNotFoundException
 from src.schemas.facilities import RoomsFacilitiesAdd
 from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest
+from src.dependencies.dependencies import room_not_none
 
 router_rooms = APIRouter(prefix="/rooms", tags=["Rooms"])
 
@@ -33,6 +36,7 @@ def unique_diff_room_facilities(room_id: int, list1: list, list2: list):
 
 @router_rooms.post("/{hotel_id}")
 async def create_rooms(
+    hnn: hotel_not_none,
     hotel_id: int,
     s3: S3Dep,
     db: DBDep,
@@ -74,33 +78,38 @@ async def create_rooms(
             }
         }
     """
-    data_room = RoomAddRequest(**json.loads(data_room_str))
-    _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
-    room = await db.rooms.add(_res)
-    rooms_facilities = [
-        RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r) for r in data_room.facilities_ids
-    ]
-    await db.rooms_facilities.add_bulk(rooms_facilities)
-    await db.commit()
 
-    if files:
-        for file in files:
-            s3_key = f"rooms/{room.id}/{file.filename}"
-            await s3.upload_file(file=file, s3_key=s3_key)
+    if hnn:
+        data_room = RoomAddRequest(**json.loads(data_room_str))
+        _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
+        room = await db.rooms.add(_res)
+        rooms_facilities = [
+            RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r) for r in data_room.facilities_ids
+        ]
+        try:
+            await db.rooms_facilities.add_bulk(rooms_facilities)
+        except FacilitiesNotFoundException as e:
+            raise HTTPException(status_code=400, detail=e.detail)
+        await db.commit()
 
-    return {
-        "Status": "Ok",
-        "data": {
-            "title": room.title,
-            "description": room.description,
-            "price": room.price,
-            "quantity": room.quantity,
-        },
-    }
+        if files:
+            for file in files:
+                s3_key = f"rooms/{room.id}/{file.filename}"
+                await s3.upload_file(file=file, s3_key=s3_key)
+
+        return {
+            "Status": "Ok",
+            "data": {
+                "title": room.title,
+                "description": room.description,
+                "price": room.price,
+                "quantity": room.quantity,
+            },
+        }
 
 
 @router_rooms.get("/{hotel_id}/{room_id}")
-async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int):
+async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int, rnn: room_not_none):
     """
     Retrieve detailed information about a single room, including its images.
 
@@ -113,15 +122,17 @@ async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int):
     Returns:
         dict: Room details and a list of image URLs.
     """
-    room = await db.rooms.get_one_or_none(id=room_id, hotel_id=hotel_id)
-    path = f"rooms/{room_id}/"
-    urls_image = await s3.generate_presigned_urls_by_prefix(prefix=path)
+    if rnn:
+        room = await db.rooms.get_one(id=room_id, hotel_id=hotel_id)
+        path = f"rooms/{room_id}/"
+        urls_image = await s3.generate_presigned_urls_by_prefix(prefix=path)
 
-    return {"Room": room, "image": urls_image}
+        return {"Room": room, "image": urls_image}
 
 
 @router_rooms.get("/{hotel_id}")
 async def get_rooms(
+    hnn: hotel_not_none,
     hotel_id: int,
     s3: S3Dep,
     db: DBDep,
@@ -141,10 +152,14 @@ async def get_rooms(
     Returns:
         dict: List of available rooms with their images, or 'empty' if none are found.
     """
-    rooms = await db.rooms.get_filtered_by_time(
-        hotel_id=hotel_id, date_from=date_from, date_to=date_to
-    )
-    if rooms:
+    if hnn:
+        try:
+            rooms = await db.rooms.get_filtered_by_time(
+                hotel_id=hotel_id, date_from=date_from, date_to=date_to
+            )
+        except NotCorrectDateException as ex:
+            raise HTTPException(status_code=400, detail=ex.detail)
+
         data_rooms = [
             {
                 "room_id": room.id,
@@ -158,12 +173,10 @@ async def get_rooms(
             for room in rooms
         ]
         return {"Status": "Ok", "rooms": data_rooms}
-    else:
-        return {"Status": "Ok", "data": "empty"}
 
 
 @router_rooms.delete("/{hotel_id}/{room_id}")
-async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int):
+async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int, rnn: room_not_none):
     """
     Delete a room and its associated images from storage.
 
@@ -176,16 +189,17 @@ async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int):
     Returns:
         dict: Operation status.
     """
-    await db.rooms.delete(id=room_id, hotel_id=hotel_id)
-    await db.commit()
-    path = f"rooms/{room_id}"
-    await s3.delete_files(path)
+    if rnn:
+        await db.rooms.delete_rooms(room_id=room_id, hotel_id=hotel_id)
+        await db.commit()
+        path = f"rooms/{room_id}"
+        await s3.delete_files(path)
 
-    return {"Status": "Ok"}
+        return {"Status": "Ok"}
 
 
 @router_rooms.put("/{hotel_id}/{room_id}")
-async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomAddRequest):
+async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomAddRequest, rnn: room_not_none):
     """
     Fully update room information and its facilities.
 
@@ -201,31 +215,32 @@ async def update_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomAdd
     Returns:
         dict: Operation status.
     """
-    _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
-    await db.rooms.update(_res, id=room_id)
-    try:
-        if data_room.facilities_ids and 0 not in data_room.facilities_ids:
-            facilities_ids = [
-                facility_id.facilities_id
-                for facility_id in await db.rooms_facilities.get_in_params(rooms_id=room_id)
-            ]
-            del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(
-                room_id, facilities_ids, data_room.facilities_ids
-            )
-            if add_facilities_ids:
-                await db.rooms_facilities.add_bulk(add_facilities_ids)
-            if del_facilities_ids:
-                await db.rooms_facilities.delete_bulk(del_facilities_ids)
-        await db.commit()
-    except IntegrityError:
-        await db.session.rollback()
-        raise HTTPException(status_code=400, detail="One of the facilities_id does not exist")
+    if rnn:
+        _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
+        await db.rooms.update(_res, id=room_id)
+        try:
+            if data_room.facilities_ids and 0 not in data_room.facilities_ids:
+                facilities_ids = [
+                    facility_id.facilities_id
+                    for facility_id in await db.rooms_facilities.get_in_params(rooms_id=room_id)
+                ]
+                del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(
+                    room_id, facilities_ids, data_room.facilities_ids
+                )
+                if add_facilities_ids:
+                    await db.rooms_facilities.add_bulk(add_facilities_ids)
+                if del_facilities_ids:
+                    await db.rooms_facilities.delete_bulk(del_facilities_ids)
+            await db.commit()
+        except IntegrityError:
+            await db.session.rollback()
+            raise HTTPException(status_code=400, detail="One of the facilities_id does not exist")
 
-    return {"Status": "Ok"}
+        return {"Status": "Ok"}
 
 
 @router_rooms.patch("/{hotel_id}/{room_id}")
-async def update_patch_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomPatchRequest):
+async def update_patch_room(db: DBDep, hotel_id: int, room_id: int, data_room: RoomPatchRequest, rnn: room_not_none):
     """
     Partially update room data and its facilities.
 
@@ -238,21 +253,22 @@ async def update_patch_room(db: DBDep, hotel_id: int, room_id: int, data_room: R
     Returns:
         dict: Operation status.
     """
-    _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump(exclude_unset=True))
-    await db.rooms.update(_res, exclude_unset=True, id=room_id)
+    if rnn:
+        _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump(exclude_unset=True))
+        await db.rooms.update(_res, exclude_unset=True, id=room_id)
 
-    if data_room.facilities_ids:
-        facilities_ids = [
-            facility_id.facilities_id
-            for facility_id in await db.rooms_facilities.get_in_params(rooms_id=room_id)
-        ]
-        del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(
-            room_id, facilities_ids, data_room.facilities_ids
-        )
-        if add_facilities_ids:
-            await db.rooms_facilities.add_bulk(add_facilities_ids)
-        if del_facilities_ids:
-            await db.rooms_facilities.delete_bulk(del_facilities_ids)
+        if data_room.facilities_ids:
+            facilities_ids = [
+                facility_id.facilities_id
+                for facility_id in await db.rooms_facilities.get_in_params(rooms_id=room_id)
+            ]
+            del_facilities_ids, add_facilities_ids = unique_diff_room_facilities(
+                room_id, facilities_ids, data_room.facilities_ids
+            )
+            if add_facilities_ids:
+                await db.rooms_facilities.add_bulk(add_facilities_ids)
+            if del_facilities_ids:
+                await db.rooms_facilities.delete_bulk(del_facilities_ids)
 
-    await db.commit()
-    return {"Status": "Ok"}
+        await db.commit()
+        return {"Status": "Ok"}
