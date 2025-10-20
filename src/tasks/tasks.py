@@ -1,6 +1,8 @@
 import asyncio
 
+from src.config import settings
 from src.database import async_session_maker_null_pool
+from src.services.telegramm.api import TgClient
 from src.tasks.celery_app import celery_instance
 from src.utils.db_manager import DBManager
 from src.dependencies.dependencies import get_client
@@ -37,3 +39,15 @@ def send_email_user_for_booking_today_checkin():
     # async_session_maker_null_pool = async_sessionmaker(bind=engine_null_pool, expire_on_commit=False)
 
     asyncio.run(data_for_email_send())
+
+
+async def send_massage_about_exception_in_Telegram(ex: str):
+    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+        chat_ids = await db.telegramm.get_all()
+        tg_client = TgClient(token=settings.telegram_token)
+        for chat_id in chat_ids:
+            await tg_client.send_message(chat_id=chat_id.chat_id, text=ex)
+
+@celery_instance.task(name="send_in_telegram")
+def send_in_telegram(ex):
+    asyncio.run(send_massage_about_exception_in_Telegram(ex))

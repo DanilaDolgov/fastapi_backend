@@ -176,7 +176,7 @@ async def get_rooms(
 
 
 @router_rooms.delete("/{hotel_id}/{room_id}")
-async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int, rnn: room_not_none):
+async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int, hnn: hotel_not_none, rnn: room_not_none):
     """
     Delete a room and its associated images from storage.
 
@@ -189,7 +189,7 @@ async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int, rnn: ro
     Returns:
         dict: Operation status.
     """
-    if rnn:
+    if hnn and rnn:
         await db.rooms.delete_rooms(room_id=room_id, hotel_id=hotel_id)
         await db.commit()
         path = f"rooms/{room_id}"

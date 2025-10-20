@@ -1,12 +1,16 @@
+import logging
+from datetime import datetime
 from operator import or_
+
+from asyncpg import UniqueViolationError
 from sqlalchemy.exc import NoResultFound
 from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete, and_
 from sqlalchemy.exc import IntegrityError
-
-from src.exceptions import HotelNotFoundException, FacilitiesNotFoundException, ObjectNotFoundException, \
+from src.exceptions import FacilitiesNotFoundException, ObjectNotFoundException, \
     ObjectAlreadyExistsException
 from src.repositories.mapper.base import DataMapper
+
 
 
 class BaseRepository:
@@ -53,8 +57,16 @@ class BaseRepository:
             result = await self.session.execute(added_stm)
             model = result.scalars().one()
             return self.mapper.map_to_domain_entity(model)
-        except IntegrityError:
-            raise ObjectAlreadyExistsException
+        except IntegrityError as ex:
+            from src.tasks.tasks import send_in_telegram
+            logging.error(f"Failed to add data {data} in data {type(ex.orig.__cause__)=}")
+            send_in_telegram.delay(f"{datetime.now()}\nError: {ex.orig.__cause__=}\n with params: {data}")
+            if isinstance(ex.orig.__cause__, UniqueViolationError):
+                raise ObjectAlreadyExistsException from ex
+            else:
+                logging.error(f"Mistake stranger with data={data}: type error {type(ex.orig.__cause__)=}")
+                send_in_telegram.delay(f"{datetime.now()}\nError: {ex.orig.__cause__=}\n with params: {data}")
+                raise ex
 
 
 

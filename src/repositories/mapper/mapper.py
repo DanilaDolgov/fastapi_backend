@@ -2,12 +2,14 @@ from src.models.bookings import BookingsOrm
 from src.models.facilities import FacilitiesOrm, FacilitiesRoomsOrm
 from src.models.hotels import HotelsOrm
 from src.models.rooms import RoomsOrm
+from src.models.telegramm import TelegrammChatOrm
 from src.models.users import UsersOrm
 from src.repositories.mapper.base import DataMapper
 from src.schemas.bookings import Booking
 from src.schemas.facilities import Facilities, RoomsFacilities
 from src.schemas.hotels import Hotel
 from src.schemas.rooms import Room
+from src.schemas.telegramm import TelegrammChatBase
 from src.schemas.users import User
 
 
@@ -39,3 +41,7 @@ class UserDataMapper(DataMapper):
 class BookingDataMapper(DataMapper):
     db_model = BookingsOrm
     schema = Booking
+
+class TelegrammDataMapper(DataMapper):
+    db_model = TelegrammChatOrm
+    schema = TelegrammChatBase

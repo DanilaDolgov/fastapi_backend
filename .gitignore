@@ -6,3 +6,5 @@ venv
 *minio_data
 *.env_test
 .coverage
+*logs
+*loki_data

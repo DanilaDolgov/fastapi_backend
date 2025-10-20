@@ -1,3 +1,4 @@
+import logging
 import redis.asyncio as redis
 from src.config import settings
 
@@ -9,8 +10,10 @@ class RedisManager:
         self._client: redis.Redis | None = None
 
     async def connect(self):
+        logging.info(f"Start connect to Redis host={self.host}, port={self.port}")
         if self._client is None:
             self._client = redis.Redis(host=self.host, port=self.port)
+        logging.info(f"Successfully connected with Redis host={self.host}, port={self.port}")
 
     async def set(self, key: str, value: str, expire: int | None = None):
         if self._client is None:

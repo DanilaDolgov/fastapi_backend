@@ -1,0 +1,27 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: web-backend
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: web-backend
+          __path__: /var/log/web-backend.log
+
+    pipeline_stages:
+      - regex:
+          expression: '^\w+\s*\|\s*(?P<timestamp>[^|]+)\s*\|\s*uvicorn\.access\s*\|\s*(?P<client>[^-]+)-\s*"(?P<method>\w+)\s+(?P<path>[^\s]+)[^"]*"\s+(?P<status_code>\d+)'
+      - labels:
+          method: ""
+          path: ""
+          status_code: ""
+          timestamp: ""

@@ -15,7 +15,7 @@ class NotCorrectDateException(ObjectBaseException):
     detail = "Dates not correct."
 
 
-class ObjectAlreadyExistsException(ObjectBaseException):
+class  ObjectAlreadyExistsException(ObjectBaseException):
     detail = "Object already exists."
 
 class HotelNotFoundException(ObjectBaseException):

@@ -1,0 +1,21 @@
+version: 1
+formatters:
+  default:
+    format: '%(levelname)s | %(asctime)s | %(name)s | %(message)s'
+
+handlers:
+  file:
+    class: logging.FileHandler
+    formatter: default
+    filename: /logs/web-backend.log
+    mode: a
+
+loggers:
+  uvicorn.error:
+    handlers: [file]
+    level: INFO
+    propagate: no
+  uvicorn.access:
+    handlers: [file]
+    level: INFO
+    propagate: no

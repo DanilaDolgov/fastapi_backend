@@ -6,6 +6,9 @@ from fastapi import Query, Depends, Request, HTTPException
 
 from src.database import async_session_maker
 from src.exceptions import ObjectNotFoundException
+from src.schemas.bookings import BookingRequest
+from src.schemas.hotels import Hotel
+from src.schemas.rooms import RoomAdd, Room
 from src.services.auth import AuthService
 from src.services.s3 import S3Client
 from src.utils.db_manager import DBManager
@@ -58,7 +61,7 @@ async def get_room_or_404(db: DBDep, hotel_id: int, room_id: int):
     except ObjectNotFoundException:
         raise HTTPException(status_code=404, detail="Room not found.")
 
-room_not_none = Annotated[ObjectNotFoundException, Depends(get_room_or_404)]
+room_not_none = Annotated[Room, Depends(get_room_or_404)]
 
 async def get_hotel_or_404(db: DBDep, hotel_id: int):
     try:
@@ -66,4 +69,15 @@ async def get_hotel_or_404(db: DBDep, hotel_id: int):
     except ObjectNotFoundException:
         raise HTTPException(status_code=404, detail="Hotel not found.")
 
-hotel_not_none = Annotated[ObjectNotFoundException, Depends(get_hotel_or_404)]
+hotel_not_none = Annotated[Hotel, Depends(get_hotel_or_404)]
+
+async def get_room_for_booking(
+    db: DBDep,
+    data_booking: BookingRequest,
+):
+    try:
+        return await db.rooms.get_one(id=data_booking.room_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=404, detail="Room not found.")
+
+room_not_none_for_booking = Annotated[Room, Depends(get_room_for_booking)]
