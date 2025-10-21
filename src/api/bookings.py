@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 
-from src.exceptions import ObjectNotFoundException, AllRoomsAreBookedException, NotCorrectDateException
+from src.exceptions import AllRoomsAreBookedException, NotCorrectDateException
 from src.schemas.bookings import BookingAdd, BookingRequest
-from src.dependencies.dependencies import UserIdDep, DBDep, Pagination, S3Dep, get_room_for_booking, \
-    room_not_none_for_booking
+from src.dependencies.dependencies import UserIdDep, DBDep, Pagination, \
+    room_not_none_for_booking, S3Dep
+from src.utils.s3_settings import s3_client
 
 booking_router = APIRouter(prefix="/booking", tags=["Бронирование"])
 
@@ -38,7 +39,7 @@ async def get_bookings_me(db: DBDep, user_id: UserIdDep):
 async def get_users_checkin_in_rooms_today(db: DBDep, s3: S3Dep):
     results_bookings = await db.booking.user_checkin_room_email()
     for result_booking in results_bookings:
-        result_booking["images"] = await s3.generate_presigned_urls_by_prefix(
-            prefix=f"rooms/{result_booking['room_id']}/"
+        result_booking["images"] = await s3_client.generate_presigned_urls_by_prefix(
+            client=s3, prefix=f"rooms/{result_booking['room_id']}/"
         )
     return results_bookings

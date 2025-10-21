@@ -7,12 +7,10 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 import logging
 from loguru import logger
-
-
 import sys
 from pathlib import Path
-
 from prometheus_fastapi_instrumentator import Instrumentator
+
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -26,14 +24,17 @@ from src.api.facilities import router_facilities
 from src.rate_many.api.rate import many_router
 from src.utils.redis_setting import redis_manager
 from src.api.telegram_webhook import webhook_telegram
+from src.utils.s3_settings import s3_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_manager.connect()
+    await s3_manager.init()
     FastAPICache.init(RedisBackend(redis_manager._client), prefix="fastapi-cache")
     yield
     await redis_manager.close()
+    await s3_manager.shutdown()
 
 
 app = FastAPI(docs_url=None, lifespan=lifespan)
@@ -60,11 +61,6 @@ instrumentator = Instrumentator().instrument(app)
 instrumentator.expose(app)
 logger = logging.getLogger("uvicorn.error")
 
-@app.exception_handler(Exception)
-async def all_exception_handler(request: Request, exc: Exception):
-    # Логируем ошибки 5XX
-    logger.error(f"5XX | Path: {request.url.path} | Error: {exc}")
-    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():

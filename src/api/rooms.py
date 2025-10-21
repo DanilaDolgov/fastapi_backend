@@ -2,14 +2,17 @@ import json
 from datetime import date
 from fastapi import APIRouter, File, UploadFile, Query, Form, HTTPException
 from typing import List
+
+from fastapi.params import Depends
 from sqlalchemy.exc import IntegrityError
 
-from src.dependencies.dependencies import DBDep, S3Dep, hotel_not_none
+from src.dependencies.dependencies import DBDep, hotel_not_none, get_s3_client, S3Dep
 from src.exceptions import HotelNotFoundException, FacilitiesNotFoundException, \
     NotCorrectDateException, ObjectNotFoundException
 from src.schemas.facilities import RoomsFacilitiesAdd
 from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest
 from src.dependencies.dependencies import room_not_none
+from src.utils.s3_settings import s3_client
 
 router_rooms = APIRouter(prefix="/rooms", tags=["Rooms"])
 
@@ -95,7 +98,7 @@ async def create_rooms(
         if files:
             for file in files:
                 s3_key = f"rooms/{room.id}/{file.filename}"
-                await s3.upload_file(file=file, s3_key=s3_key)
+                await s3_client.upload_file(client=s3, file=file, s3_key=s3_key)
 
         return {
             "Status": "Ok",
@@ -109,7 +112,7 @@ async def create_rooms(
 
 
 @router_rooms.get("/{hotel_id}/{room_id}")
-async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int, rnn: room_not_none):
+async def get_room_one(hotel_id: int, db: DBDep, room_id: int, rnn: room_not_none, s3: S3Dep):
     """
     Retrieve detailed information about a single room, including its images.
 
@@ -125,11 +128,11 @@ async def get_room_one(hotel_id: int, s3: S3Dep, db: DBDep, room_id: int, rnn: r
     if rnn:
         room = await db.rooms.get_one(id=room_id, hotel_id=hotel_id)
         path = f"rooms/{room_id}/"
-        urls_image = await s3.generate_presigned_urls_by_prefix(prefix=path)
+        urls_image = await s3_client.generate_presigned_urls_by_prefix(client=s3, prefix=path)
 
         return {"Room": room, "image": urls_image}
-
-
+#
+#
 @router_rooms.get("/{hotel_id}")
 async def get_rooms(
     hnn: hotel_not_none,
