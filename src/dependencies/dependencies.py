@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from aiobotocore.session import AioSession
+from aiobotocore.client import AioBaseClient
 from pydantic import BaseModel
 from fastapi import Query, Depends, Request, HTTPException
 
@@ -10,10 +10,8 @@ from src.schemas.bookings import BookingRequest
 from src.schemas.hotels import Hotel
 from src.schemas.rooms import Room
 from src.services.auth import AuthService
-from src.services.s3 import S3Client
 from src.utils.db_manager import DBManager
-from src.utils.s3_manager import S3Manager
-from src.utils.s3_settings import s3_manager
+from src.utils.s3_settings import s3_manager, s3_client
 
 
 class PaginationParams(BaseModel):
@@ -50,13 +48,14 @@ async def get_db():
 
 DBDep = Annotated[DBManager, Depends(get_db)]
 
-
+def get_client_s3():
+    return s3_client
 
 async def get_s3_client():
-    async with s3_manager as client:
+    async with get_client_s3() as client:
         yield client
-#
-S3Dep = Annotated[AioSession, Depends(get_s3_client)]
+
+S3Dep = Annotated[AioBaseClient, Depends(get_s3_client)]
 
 async def get_room_or_404(db: DBDep, hotel_id: int, room_id: int):
     try:

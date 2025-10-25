@@ -26,5 +26,12 @@
         "description": null,
         "price": 4350,
         "quantity": 8
+    },
+    {
+        "hotel_id": 4,
+        "title": "Номер на 5-х человек",
+        "description": null,
+        "price": 10000,
+        "quantity": 1
     }
 ]

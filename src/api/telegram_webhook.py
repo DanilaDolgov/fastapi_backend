@@ -2,8 +2,7 @@ from fastapi import APIRouter
 from src.dependencies.dependencies import DBDep
 from src.schemas.telegramm import TelegrammChatBase, TelegramUpdate
 from src.config import settings
-from src.services.telegramm.api import TgClient
-import asyncio
+from src.telegramm.api import TgClient
 
 webhook_telegram = APIRouter(prefix="/webhook", tags=["Telegram"])
 """

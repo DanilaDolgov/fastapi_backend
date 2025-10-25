@@ -5,7 +5,7 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 from src.config import settings
-from src.services.telegramm.api import TgClient
+from src.telegramm.api import TgClient
 
 WEBHOOK_URL = "http://127.0.0.1:8000/webhook"
 

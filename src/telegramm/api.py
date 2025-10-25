@@ -1,4 +1,4 @@
-from src.services.telegramm.base import ClientError, Client
+from src.telegramm.base import ClientError, Client
 
 
 class TgClientError(ClientError):

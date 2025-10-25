@@ -16,7 +16,7 @@ async def test_register_user(email, password, ac, db):
         assert await db.user.get_one_or_none(email=email) is not None
         assert len(await db.user.get_in_params(email=email)) == 1
     else:
-        assert res_register.status_code == 400
+        assert res_register.status_code == 409
         assert len(await db.user.get_in_params(email=email)) == 1
 
 

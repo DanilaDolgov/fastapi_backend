@@ -1,6 +1,6 @@
 import os
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from src.services.mail_send_settings import EmailSender
+from src.utils.mail_send_settings import EmailSender
 from src.config import settings
 
 # -----------------------------

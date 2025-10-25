@@ -24,17 +24,24 @@ from src.api.facilities import router_facilities
 from src.rate_many.api.rate import many_router
 from src.utils.redis_setting import redis_manager
 from src.api.telegram_webhook import webhook_telegram
-from src.utils.s3_settings import s3_manager
+from src.utils.s3_settings import s3_manager, s3_client
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_manager.connect()
-    await s3_manager.init()
+    await s3_client.init()
+    try:
+        async with s3_client as client:
+            print(f"[DEBUG S3] client id={id(client)}")
+            resp = await client.list_buckets()
+            print(f"[S3 CONNECTED] Buckets available: {[b['Name'] for b in resp.get('Buckets', [])]}")
+    except Exception as e:
+        print(f"[S3 CONNECTION ERROR] {type(e).__name__}: {e}")
     FastAPICache.init(RedisBackend(redis_manager._client), prefix="fastapi-cache")
     yield
     await redis_manager.close()
-    await s3_manager.shutdown()
+    await s3_client.shutdown()
 
 
 app = FastAPI(docs_url=None, lifespan=lifespan)

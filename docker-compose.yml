@@ -31,6 +31,7 @@ services:
       - .env
     depends_on:
       - redis
+      - db
 
   celery_worker:
     build: .
@@ -40,6 +41,7 @@ services:
       - .env
     depends_on:
       - redis
+      - db
 
   db:
     image: postgres:alpine
