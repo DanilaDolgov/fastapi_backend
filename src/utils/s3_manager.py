@@ -75,7 +75,7 @@ class S3Manager:
             return [obj["Key"] for obj in response["Contents"]]
 
     async def generate_presigned_url(self, key: str, expires_in: int = 365 * 24 * 3600) -> str:
-        async with self.client_context(_internal=False) as client:
+        async with S3Client(internal=False) as client:
             url = await client.generate_presigned_url(
                 "get_object",
                 Params={
