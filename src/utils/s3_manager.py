@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from typing import List
 import mimetypes
 import asyncio
+from urllib.parse import urlparse, urlunparse
+
 from src.config import settings
 from src.schemas.files_dto import FileDTO
 from src.utils.s3_client import S3Client
@@ -85,7 +87,19 @@ class S3Manager:
                 },
                 ExpiresIn=expires_in,
             )
-            return url
+            parsed = urlparse(url)
+            public_parsed = urlparse(settings.MINIO_PUBLIC_URL)
+
+            new_url = urlunparse((
+                public_parsed.scheme or parsed.scheme,
+                public_parsed.netloc or parsed.netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment
+            ))
+
+            return new_url
 
     async def generate_presigned_urls_by_prefix(self, prefix: str, expires_in: int = 3600) -> List[dict] | None:
         keys = await self.list_keys(prefix)
