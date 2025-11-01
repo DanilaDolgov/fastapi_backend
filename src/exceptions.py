@@ -1,28 +1,34 @@
 class ObjectBaseException(Exception):
-    detail = "Неожиданная ошибка"
+    default_detail = "Неожиданная ошибка"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, detail: str | None = None, *args, **kwargs):
+        self.detail = detail or self.default_detail
         super().__init__(self.detail, *args, **kwargs)
 
 
 class ObjectNotFoundException(ObjectBaseException):
-    detail = "Object not found"
+    default_detail = "Object not found."
+
 
 class AllRoomsAreBookedException(ObjectBaseException):
-    detail = "All rooms are booked"
+    default_detail = "All rooms are booked."
+
 
 class NotCorrectDateException(ObjectBaseException):
-    detail = "Dates not correct."
+    default_detail = "Dates not correct."
 
 
-class  ObjectAlreadyExistsException(ObjectBaseException):
-    detail = "Object already exists."
+class ObjectAlreadyExistsException(ObjectBaseException):
+    default_detail = "Object already exists."
+
 
 class HotelNotFoundException(ObjectBaseException):
-    detail = "Hotel not found."
+    default_detail = "Hotel not found."
+
 
 class FacilitiesNotFoundException(ObjectBaseException):
-    detail = "Facilities not found."
+    default_detail = "Facilities not found."
+
 
 class HotelOrRoomsNotFoundException(ObjectBaseException):
-    detail = "Hotel or room not found."
+    default_detail = "Hotel or room not found."

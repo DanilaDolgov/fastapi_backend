@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Request
 from passlib.context import CryptContext
 
 from src.dependencies.dependencies import UserIdDep, DBDep
@@ -44,6 +44,19 @@ async def get_me(db: DBDep, user_id: UserIdDep):
 
 
 @router.post("/logout")
-async def logout_user(response: Response):
-    response.delete_cookie("access_token")
-    return {"Status": "Ok"}
+async def logout_user(request: Request, response: Response):
+    access_token = request.cookies.get("access_token")
+
+    if not access_token:
+        # токена нет — пользователь уже разлогинен
+        return {"status": "ok", "message": "Вы уже вышли из аккаунта."}
+
+    # удаляем cookie с токеном
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        samesite="lax",
+        secure=False  # True, если HTTPS
+    )
+
+    return {"status": "ok", "message": "Вы вышли из аккаунта."}

@@ -12,6 +12,7 @@ from pathlib import Path
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
+
 sys.path.append(str(Path(__file__).parent.parent))
 
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +26,7 @@ from src.rate_many.api.rate import many_router
 from src.utils.redis_setting import redis_manager
 from src.api.telegram_webhook import webhook_telegram
 from src.utils.s3_settings import s3_manager, s3_client
+from src.api.image import router_images
 
 
 @asynccontextmanager
@@ -54,6 +56,7 @@ app.include_router(router_booking)
 app.include_router(router_facilities)
 app.include_router(many_router)
 app.include_router(webhook_telegram)
+app.include_router(router_images)
 
 app.add_middleware(
     CORSMiddleware,

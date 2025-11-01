@@ -2,7 +2,7 @@ from datetime import date
 from fastapi import Query, APIRouter, Body, HTTPException
 
 from src.dependencies.dependencies import DBDep, Pagination
-from src.exceptions import NotCorrectDateException, ObjectNotFoundException
+from src.exceptions import NotCorrectDateException, ObjectNotFoundException, ObjectAlreadyExistsException
 from src.schemas.hotels import HotelPATCH, HotelAdd
 from src.dependencies.dependencies import hotel_not_none
 from src.services.hotels import HotelServices
@@ -30,16 +30,17 @@ async def get_hotels(
     return {"Status": "Ok", "data": hotels}
 
 @router_hotels.delete("/{hotel_id}")
-async def delete_hotels(db: DBDep, hotel_id: int):
-    await HotelServices(db).delete_hotels(hotel_id=hotel_id)
+async def delete_hotels(db: DBDep, hotel_id: int, hnn: hotel_not_none):
+    if hnn:
+        await HotelServices(db).delete_hotels(hotel_id=hotel_id)
 
-    return {"Status": "Ok"}
+        return {"Status": "Ok"}
 
 
 @router_hotels.get("/{hotel_id}")
 async def get_hotel_one(db: DBDep, hotel_id: int, hnn: hotel_not_none):
     if hnn:
-        hotel = HotelServices(db).get_one(hotel_id=hotel_id)
+        hotel = await HotelServices(db).get_one(hotel_id=hotel_id)
 
         return {"Status": "Ok", "data": hotel}
 
@@ -56,20 +57,24 @@ async def create_hotels(
         }
     ),
 ):
-    hotel = await HotelServices(db).add_hotel(data_hotel=data_hotel)
-
+    try:
+        hotel = await HotelServices(db).add_hotel(data_hotel=data_hotel)
+    except ObjectAlreadyExistsException:
+        raise HTTPException(status_code=409, detail="Hotel already exists.")
     return {"Status": "Ok", "data": hotel}
 
 
 @router_hotels.put("/{hotel_id}")
-async def update_hotel(db: DBDep, hotel_id: int, data_hotel: HotelAdd):
-    await HotelServices(db).update_hotel(hotel_id=hotel_id, data_hotel=data_hotel)
+async def update_hotel(db: DBDep, hotel_id: int, data_hotel: HotelAdd, hnn: hotel_not_none):
+    if hnn:
+        await HotelServices(db).update_hotel(hotel_id=hotel_id, data_hotel=data_hotel)
 
-    return {"Status": "Ok"}
+        return {"Status": "Ok"}
 
 
 @router_hotels.patch("/{hotel_id}")
-async def update_patch_hotel(db: DBDep, hotel_id: int, data_hotel: HotelPATCH):
-    await HotelServices(db).update_patch_hotel(data_hotel=data_hotel, hotel_id=hotel_id)
+async def update_patch_hotel(db: DBDep, hotel_id: int, data_hotel: HotelPATCH, hnn: hotel_not_none):
+    if hnn:
+        await HotelServices(db).update_patch_hotel(data_hotel=data_hotel, hotel_id=hotel_id)
 
-    return {"Status": "Ok"}
+        return {"Status": "Ok"}

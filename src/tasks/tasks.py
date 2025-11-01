@@ -25,7 +25,7 @@ async def init_s3() -> S3Manager:
     """Создаёт и инициализирует S3Manager с новым S3Client."""
     s3_client = S3Client()
     await s3_client.init()
-    return S3Manager(s3_client=s3_client)
+    return S3Manager(client=s3_client)
 
 
 
@@ -41,8 +41,6 @@ async def data_for_email_send(s3_manager: S3Manager):
             )
 
     await send_checkin_emails(bookings)
-
-    await s3_manager._s3_client.shutdown()
 
 
 
