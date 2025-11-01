@@ -2,7 +2,7 @@ import json
 from datetime import date
 from io import BufferedReader
 
-from fastapi import APIRouter, File, UploadFile, Query, Form, HTTPException
+from fastapi import APIRouter, File, UploadFile, Query, Form, HTTPException, Body
 from typing import List
 
 from fastapi.params import Depends
@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from src.dependencies.dependencies import DBDep, hotel_not_none, get_s3_client, S3Dep
 from src.exceptions import HotelNotFoundException, FacilitiesNotFoundException, \
-    NotCorrectDateException, ObjectNotFoundException
+    NotCorrectDateException, ObjectNotFoundException, ObjectAlreadyExistsException
 from src.schemas.facilities import RoomsFacilitiesAdd
 from src.schemas.files_dto import FileDTO
 from src.schemas.rooms import RoomAdd, RoomPATCH, RoomAddRequest, RoomPatchRequest
@@ -27,19 +27,17 @@ async def create_rooms(
     hnn: hotel_not_none,
     hotel_id: int,
     db: DBDep,
-    data_room_str: str = Form(
-        ...,
-        description=json.dumps(
-            {
-                "title": "string",
-                "description": "string",
-                "price": 0,
-                "quantity": 0,
-                "facilities_ids": [1, 2],
+    data_room: RoomAddRequest = Body(openapi_examples={
+            "1": {
+                "summary": "Room",
+                "value": {"title": "Standart",
+                "description": "",
+                "price": 10000,
+                "quantity": 1,
+                "facilities_ids": [1, 2],},
             }
-        ),
+        }
     ),
-    files: List[UploadFile] | None = File(None),
 ):
     """
     Create a new room for a specific hotel.
@@ -67,22 +65,14 @@ async def create_rooms(
     """
 
     if hnn:
-        data_room = RoomAddRequest(**json.loads(data_room_str))
         _res = RoomAdd(hotel_id=hotel_id, **data_room.model_dump())
-        if files:
-            file_dtos = [
-                FileDTO(
-                    filename=f.filename,
-                    content_type=f.content_type,
-                    file=BufferedReader(f.file)
-                )
-                for f in files
-            ]
-            print(file_dtos)
+
         try:
-            room = await RoomServices(db, s3=s3_manager).create_rooms(_res, data_room, file_dtos)
+            room = await RoomServices(db).create_rooms(_res, data_room)
         except FacilitiesNotFoundException as e:
             raise HTTPException(status_code=400, detail=e.detail)
+        except ObjectAlreadyExistsException as e:
+            raise HTTPException(status_code=409, detail=e.detail)
 
         return {
             "Status": "Ok",
@@ -149,7 +139,7 @@ async def get_rooms(
 
 
 @router_rooms.delete("/{hotel_id}/{room_id}")
-async def delete_room(db: DBDep, s3: S3Dep, hotel_id: int, room_id: int, hnn: hotel_not_none, rnn: room_not_none):
+async def delete_room(db: DBDep, hotel_id: int, room_id: int, hnn: hotel_not_none, rnn: room_not_none):
     """
     Delete a room and its associated images from storage.
 
@@ -206,7 +196,6 @@ async def update_room(db: DBDep,
 async def update_patch_room(db: DBDep,
                             hotel_id: int,
                             room_id: int,
-                            file_path: str | None,
                             data_room: RoomPatchRequest,
                             hnn: hotel_not_none,
                             rnn: room_not_none):
@@ -224,5 +213,8 @@ async def update_patch_room(db: DBDep,
     """
     if hnn and rnn:
         _res = RoomPATCH(hotel_id=hotel_id, **data_room.model_dump(exclude_unset=True))
-        await RoomServices(db).patch_room(room_id=room_id, res=_res, data_room=data_room, file_path=file_path)
+        try:
+            await RoomServices(db).patch_room(room_id=room_id, res=_res, data_room=data_room)
+        except FacilitiesNotFoundException as e:
+            raise HTTPException(status_code=400, detail=e.detail)
         return {"Status": "Ok"}

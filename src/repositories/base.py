@@ -20,6 +20,7 @@ def notify_on_error(func):
         try:
             return await func(*args, **kwargs)
         except Exception as ex:
+            print(ex)
             if isinstance(ex, (ObjectAlreadyExistsException, ObjectNotFoundException, FacilitiesNotFoundException)):
                 raise
 
@@ -86,7 +87,7 @@ class BaseRepository:
         except IntegrityError as ex:
             logging.error(f"Failed to add data {data} due to {type(ex.orig.__cause__)=}")
             if isinstance(ex.orig.__cause__, UniqueViolationError):
-                raise ObjectAlreadyExistsException from ex
+                raise ObjectAlreadyExistsException
             raise ex
 
     @notify_on_error

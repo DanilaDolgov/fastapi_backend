@@ -1,6 +1,7 @@
 from datetime import date
 from typing import List
 
+from src.exceptions import FacilitiesNotFoundException, ObjectAlreadyExistsException
 from src.schemas.facilities import RoomsFacilitiesAdd
 from src.schemas.files_dto import FileDTO
 from src.schemas.rooms import RoomAdd, RoomAddRequest, RoomPATCH, RoomPatchRequest
@@ -29,18 +30,25 @@ def unique_diff_room_facilities(room_id: int, list1: list, list2: list):
 class RoomServices(BaseServices):
     async def create_rooms(self,
             room_data_add: RoomAdd,
-            room_data_request: RoomAddRequest,
-            file_dtos: List[FileDTO] | None = None,
+            room_data_request: RoomAddRequest
     ):
+        existing_room = await self.db.rooms.get_in_params(hotel_id=room_data_add.hotel_id, title=room_data_add.title)
+        if existing_room:
+            hotel = await self.db.hotels.get_one(id=room_data_add.hotel_id)
+            raise ObjectAlreadyExistsException(detail=f"Hotel {hotel.title} with room title {room_data_add.title} already exists.")
         room = await self.db.rooms.add(room_data_add)
         rooms_facilities = [
             RoomsFacilitiesAdd(rooms_id=room.id, facilities_id=r) for r in room_data_request.facilities_ids
         ]
+        existing_facilities = await self.db.facilities.get_all()
+        existing_ids = [f.id for f in existing_facilities]
+
+        missing_ids = set(room_data_request.facilities_ids) - set(existing_ids)
+        if missing_ids:
+            raise FacilitiesNotFoundException
         await self.db.rooms_facilities.add_bulk(rooms_facilities)
         await self.db.commit()
-        if file_dtos:
-            s3_key = f"rooms/{room.id}"
-            await self.s3.upload_files( files=file_dtos, prefix=s3_key)
+
         return room
 
     async def get_room_one(self, room_id: int, hotel_id: int):
@@ -77,6 +85,13 @@ class RoomServices(BaseServices):
         await self.s3.delete_files(prefix=path)
 
     async def update_room(self, room_id, res: RoomAdd, data_room: RoomAddRequest):
+        if data_room.facilities_ids:
+            existing_facilities = await self.db.facilities.get_all()
+            existing_ids = [f.id for f in existing_facilities]
+
+            missing_ids = set(data_room.facilities_ids) - set(existing_ids)
+            if missing_ids:
+                raise FacilitiesNotFoundException
         await self.db.rooms.update(res, id=room_id)
         if data_room.facilities_ids and 0 not in data_room.facilities_ids:
             facilities_ids = [
@@ -92,7 +107,14 @@ class RoomServices(BaseServices):
                 await self.db.rooms_facilities.delete_bulk(del_facilities_ids)
         await self.db.commit()
 
-    async def patch_room(self, room_id, res: RoomPATCH, data_room: RoomPatchRequest, filename: str | None = None):
+    async def patch_room(self, room_id, res: RoomPATCH, data_room: RoomPatchRequest):
+        if data_room.facilities_ids:
+            existing_facilities = await self.db.facilities.get_all()
+            existing_ids = [f.id for f in existing_facilities]
+
+            missing_ids = set(data_room.facilities_ids) - set(existing_ids)
+            if missing_ids:
+                raise FacilitiesNotFoundException
         await self.db.rooms.update(res, exclude_unset=True, id=room_id)
         if data_room.facilities_ids:
             facilities_ids = [
@@ -108,5 +130,3 @@ class RoomServices(BaseServices):
                 await self.db.rooms_facilities.delete_bulk(del_facilities_ids)
 
         await self.db.commit()
-        if filename:
-            await self.s3.delete_files(filename)

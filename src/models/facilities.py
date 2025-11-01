@@ -24,5 +24,5 @@ class FacilitiesRoomsOrm(Base):
     __tablename__ = "facilities_rooms"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    facilities_id: Mapped[str] = mapped_column(ForeignKey("facilities.id"))
-    rooms_id: Mapped[id] = mapped_column(ForeignKey("rooms.id"))
+    facilities_id: Mapped[str] = mapped_column(ForeignKey("facilities.id", ondelete="CASCADE"))
+    rooms_id: Mapped[id] = mapped_column(ForeignKey("rooms.id", ondelete="CASCADE"))
