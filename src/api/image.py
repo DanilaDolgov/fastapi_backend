@@ -28,9 +28,9 @@ async def upload_images(entity: str, entity_id: int, s3: S3Dep, db: DBDep, files
     if entity not in ("hotels", "rooms"):
         raise HTTPException(status_code=400, detail="Invalid entity. Must be 'hotels' or 'rooms'.")
     if entity == "hotels":
-        obj = await db.hotels.get_one(id=entity_id)
+        obj = await db.hotels.get_one_or_none(id=entity_id)
     else:
-        obj = await db.rooms.get_one(id=entity_id)
+        obj = await db.rooms.get_one_or_none(id=entity_id)
 
     if not obj:
         raise HTTPException(status_code=404, detail=f"{entity[:-1].capitalize()} not found")
