@@ -1,4 +1,4 @@
-
+version: "3.9"
 
 services:
   web-backend:
@@ -14,14 +14,17 @@ services:
       - ./config:/config
     command: >
       bash -c "alembic upgrade head &&
-      uvicorn src.main:app --host 0.0.0.0 --port 8000"
-      --log-config /config/logging_config.yaml
+      uvicorn src.main:app --host 0.0.0.0 --port 8000
+      --log-config /config/logging_config.yaml"
     depends_on:
       - redis
       - db
       - minio
     networks:
       - booking_network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   celery_beat:
     build: .
@@ -107,7 +110,6 @@ services:
 #    networks:
 #      - booking_network
 #
-#
 #  loki:
 #    image: grafana/loki:2.9.0
 #    container_name: loki
@@ -163,4 +165,3 @@ volumes:
   postgres_data:
   minio_data:
 #  loki_data:
-
