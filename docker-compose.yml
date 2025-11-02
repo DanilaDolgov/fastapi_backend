@@ -162,5 +162,5 @@ networks:
 volumes:
   postgres_data:
   minio_data:
-#  loki_data:
+  loki_data:
 
