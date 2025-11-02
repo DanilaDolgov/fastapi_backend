@@ -10,16 +10,18 @@ services:
       - .env
     volumes:
       - ./src:/src/src
-#      - ./logs:/logs
-#      - ./config:/config
+      - ./logs:/logs
+      - ./config:/config
     command: >
       bash -c "alembic upgrade head &&
       uvicorn src.main:app --host 0.0.0.0 --port 8000"
-#      --log-config /config/logging_config.yaml
+      --log-config /config/logging_config.yaml
     depends_on:
       - redis
       - db
       - minio
+    networks:
+      - booking_network
 
   celery_beat:
     build: .
@@ -30,6 +32,11 @@ services:
     depends_on:
       - redis
       - db
+    networks:
+      - booking_network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   celery_worker:
     build: .
@@ -40,6 +47,11 @@ services:
     depends_on:
       - redis
       - db
+    networks:
+      - booking_network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
   db:
     image: postgres:alpine
@@ -55,6 +67,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - booking_network
 
   minio:
     container_name: minio
@@ -68,62 +82,85 @@ services:
     command: ["server", "--console-address", ":9001", "/data"]
     volumes:
       - ./minio_data:/data
+    networks:
+      - booking_network
 
   redis:
     image: redis:7-alpine
     container_name: redis_server
     ports:
       - "6379:6379"
+    networks:
+      - booking_network
 
-#  prometheus:
-#    image: prom/prometheus:latest
-#    container_name: prometheus
-#    ports:
-#      - "9090:9090"
-#    volumes:
-#      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-#    command:
-#      - "--config.file=/etc/prometheus/prometheus.yml"
-#    depends_on:
-#      - web-backend
-#
-#  loki:
-#    image: grafana/loki:2.9.0
-#    container_name: loki
-#    ports:
-#      - "3100:3100"
-#    command: -config.file=/etc/loki/loki-config.yaml
-#    volumes:
-#      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
-#      - loki_data:/loki_data
-#    user: "0:0"
-#
-#  promtail:
-#    image: grafana/promtail:latest
-#    container_name: promtail
-#    volumes:
-#      - ./logs:/var/log
-#      - ./config/promtail-config.yaml:/etc/promtail/config.yaml:ro
-#    command: -config.file=/etc/promtail/config.yaml
-#    depends_on:
-#      - loki
-#
-#  grafana:
-#    image: grafana/grafana:latest
-#    container_name: grafana
-#    ports:
-#      - "3000:3000"
-#    environment:
-#      - GF_SECURITY_ADMIN_USER=admin
-#      - GF_SECURITY_ADMIN_PASSWORD=admin
-#      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
-#    volumes:
-#      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-#      - ./grafana/dashboards:/var/lib/grafana/dashboards
-#    depends_on:
-#      - loki
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - web-backend
+    networks:
+      - booking_network
+
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
+      - loki_data:/loki_data
+    user: "0:0"
+    networks:
+      - booking_network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./logs:/var/log
+      - ./config/promtail-config.yaml:/etc/promtail/config.yaml:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - booking_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - loki
+    networks:
+      - booking_network
+
+networks:
+  booking_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: booking_net
 
 volumes:
   postgres_data:
   minio_data:
 #  loki_data:
+
