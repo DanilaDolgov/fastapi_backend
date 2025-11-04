@@ -48,5 +48,8 @@ async def upload_images(entity: str, entity_id: int, s3: S3Dep, db: DBDep, files
     ]
 
     await ImageServices(s3=s3_manager).image_upload(file_dtos=file_dtos, path=f"/{entity}/{entity_id}")
+    result = [f"{f.filename}, \n" for f in file_dtos]
+
+    return {"Status": "Ok", "files upload": f"{str(result)}"}
 
 
